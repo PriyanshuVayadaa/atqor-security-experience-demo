@@ -1,0 +1,147 @@
+/* Shared presentation polish for the four interactive experiences. */
+:root {
+  --demo-blue: #2563eb;
+  --demo-blue-dark: #1746a2;
+  --demo-blue-soft: #eff6ff;
+  --demo-blue-line: #d7e5fa;
+  --demo-ink: #24354b;
+  --demo-muted: #63758d;
+  --demo-success: #16794a;
+  --demo-success-soft: #edf8f1;
+  --demo-warning: #9a5b08;
+  --demo-warning-soft: #fff7e8;
+  --demo-danger: #b42332;
+  --demo-danger-soft: #fff1f2;
+}
+
+/* Shared entry cards feel like one suite without flattening each demo's identity. */
+.er-entry,.pa-launch,.it-launch,.caw-home-launch {
+  box-shadow: 0 8px 26px #1c3c5a0b;
+}
+.er-entry>button,.pa-launch>button,.it-launch button,.caw-home-launch .button {
+  transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+}
+.er-entry>button:hover,.pa-launch>button:hover,.it-launch button:hover,.caw-home-launch .button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px #15365a24;
+  filter: brightness(1.03);
+}
+
+/* Conditional Access: reduce the dashboard stack and sharpen policy scanning. */
+#ca-demo-root { --caw-focus: var(--demo-blue); }
+#ca-demo-root .caw-disclosure { margin: 9px 0; padding: 8px 11px; border: 1px solid #dce9fb; }
+#ca-demo-root .caw-stats { margin: 10px 0; box-shadow: 0 3px 12px #163c6908; }
+#ca-demo-root .caw-stats>div { padding: 11px 16px; }
+#ca-demo-root .caw-inline-tabs { margin-bottom: 10px; }
+#ca-demo-root .caw-inline-tabs button { padding: 7px 0 9px; }
+#ca-demo-root .caw-start,#ca-demo-root .caw-last-result { padding: 12px 15px; margin-bottom: 11px; box-shadow: 0 3px 14px #163c6908; }
+#ca-demo-root .caw-list-tools { padding: 10px 13px; }
+#ca-demo-root .caw-table tbody tr { transition: background .15s ease; }
+#ca-demo-root .caw-table tbody tr:hover { background: #f5f9ff; }
+#ca-demo-root .caw-name { color: #1558b0; font-weight: 600; }
+#ca-demo-root .caw-pill { font-weight: 600; }
+#ca-demo-root .caw-decision { border-radius: 8px; box-shadow: 0 6px 20px #163c690b; }
+#ca-demo-root .caw-evaluation details[open] { background: color-mix(in srgb,var(--surface-alt) 64%,transparent); }
+#ca-demo-root button:focus-visible,#ca-demo-root input:focus-visible,#ca-demo-root select:focus-visible { outline: 2px solid var(--demo-blue); outline-offset: 2px; }
+
+/* Entra reel: increase scene readability while keeping its cinematic dark stage. */
+#entra-reel-root.eo-shell { --eo-blue: #9bd5ff; }
+#entra-reel-root .eo-object-label { font-size: 13px; text-shadow: 0 2px 9px #07111f; }
+#entra-reel-root .eo-object strong { font-size: 11px; font-weight: 600; box-shadow: 0 3px 12px #03091475; }
+#entra-reel-root .eo-story-clock,#entra-reel-root .eo-camera-label { font-size: 10px; color: #a7bfd9; }
+#entra-reel-root .eo-scene-state { font-size: 12px; font-weight: 600; }
+#entra-reel-root .eo-scene-state>span:last-child { color: #b3c8df; font-size: 11px; }
+#entra-reel-root .eo-progress>span { font-size: 8px; }
+#entra-reel-root .eo-episodes button { transition: border-color .16s ease,background .16s ease,transform .16s ease; }
+#entra-reel-root .eo-episodes button:hover { transform: translateY(-1px); border-color: #6189b2; }
+#entra-reel-root .eo-choices button,#entra-reel-root .eo-next,#entra-reel-root .eo-play { font-weight: 600; transition: transform .16s ease,filter .16s ease; }
+#entra-reel-root .eo-choices button:hover,#entra-reel-root .eo-next:hover,#entra-reel-root .eo-play:hover { transform: translateY(-1px); filter: brightness(1.1); }
+
+/* Copilot Agent: unify conversation, policy outcomes and scripted output in blue. */
+#purview-agent-root.pc-shell { --pc-accent: var(--demo-blue); --pc-accent-hover: var(--demo-blue-dark); }
+#purview-agent-root .pc-welcome { min-height: 0; height: auto; padding: clamp(16px,4vh,36px) 8px; }
+#purview-agent-root .pc-welcome h2 { color: #203b63; }
+#purview-agent-root .pc-welcome>p { color: #526a87; }
+#purview-agent-root .pc-welcome-orb { box-shadow: 0 9px 28px #2563eb15; }
+#purview-agent-root .pc-starter-cards button { box-shadow: 0 3px 12px #18395c08; transition: transform .16s ease,border-color .16s ease,box-shadow .16s ease; }
+#purview-agent-root .pc-starter-cards button:hover { transform: translateY(-2px); box-shadow: 0 8px 18px #18395c12; }
+#purview-agent-root .pc-policy-message { border-color: #c9dcf9; border-left-color: #3678df; background: linear-gradient(120deg,#f3f8ff,#fff); box-shadow: 0 7px 22px #2563eb0d; }
+#purview-agent-root .pc-policy-message>header,#purview-agent-root .pc-policy-message h3 { color: #234f90; }
+#purview-agent-root .pc-policy-message>header>b { color: #245cad; border-color: #c9dcf9; background: #eaf2ff; }
+#purview-agent-root .pc-policy-icon { color: #2868c0; border-color: #c9dcf9; background: #eaf2ff; }
+#purview-agent-root .pc-policy-message>p,#purview-agent-root .pc-mask-note { color: #526b8b; }
+#purview-agent-root .pc-findings>span { color: #285d9f; border-color: #cbdcf5; background: #eff5ff; }
+#purview-agent-root .pc-findings small,#purview-agent-root .pc-not-delivered>span { color: #5b7598; }
+#purview-agent-root .pc-not-delivered { color: #254f8b; border-color: #d6e4f8; }
+#purview-agent-root .pc-inline-action { color: #174ea6; border-color: #b9d1f4; background: #edf4ff; }
+#purview-agent-root .pc-inline-action:hover { background: #e2edff; }
+#purview-agent-root .pc-agent-message { color: #334d70; }
+#purview-agent-root .pc-scripted-output { border-left-color: #8eb6f2; }
+#purview-agent-root .pc-scripted-output>strong,#purview-agent-root .pc-scripted-output ul { color: #315d9c; }
+#purview-agent-root .pc-admitted { color: #225eb0; }
+#purview-agent-root .pc-audit-warning { color: #80530d; border-color: #ebd29f; background: #fff8e9; }
+#purview-agent-root .pc-response-author,#purview-agent-root .pc-history-note { color: #536981; }
+#purview-agent-root .pc-user-bubble>p { color: #263d5e; }
+#purview-agent-root .pc-protection-bar { background: #eef5ff; color: #315d9c; }
+#purview-agent-root .pc-inspector-status.blocked { border-color: #c9dcf9; background: #f0f6ff; }
+#purview-agent-root .pc-inspector-status.blocked>span,#purview-agent-root .pc-inspector-status.blocked>p { color: #315d9c; }
+#purview-agent-root .pc-inspector-status.blocked>.pc-inspector-shield { color: #2868c0; border-color: #c9dcf9; background: #e4efff; }
+#purview-agent-root .pc-send { background: var(--demo-blue); }
+#purview-agent-root .pc-send:hover { background: var(--demo-blue-dark); }
+
+/* Intune: make device state and operations legible, with a more convincing workspace screen. */
+#intune-device-root.it-shell { --it-ink: #20344f; --it-muted: #526985; background: radial-gradient(ellipse at 18% 44%,#e8f1ff 0,transparent 42%),#f3f6fb; }
+#intune-device-root .it-story-heading h2 { color: #203d66; }
+#intune-device-root .it-story-heading p { color: #526985; }
+#intune-device-root .it-scenarios button { color: #435b78; box-shadow: 0 2px 8px #18395c07; transition: border-color .16s ease,background .16s ease,transform .16s ease; }
+#intune-device-root .it-scenarios button:hover { transform: translateY(-1px); border-color: #8bb5ed; }
+#intune-device-root .it-scenarios button.selected { color: #194f9a; border-color: #6ea3ec; background: #eaf3ff; }
+#intune-device-root .it-device.laptop,#intune-device-root .it-device.phone { box-shadow: 0 17px 38px #1d3d6524,0 3px 8px #18395c12; }
+#intune-device-root .it-device-display { background: linear-gradient(180deg,#fff,#fbfdff); }
+#intune-device-root .it-workspace-preview h3,#intune-device-root .it-device-app-header strong { color: #294d7b; }
+#intune-device-root .it-workspace-preview p,#intune-device-root .it-device-app-header small { color: #526985; }
+#intune-device-root .it-workspace-preview>div>span { color: #315d94; border-color: #d5e3f6; background: #f3f7fd; box-shadow: inset 0 1px #fff; }
+#intune-device-root .it-device-account,#intune-device-root .it-device-account strong { color: #526985; }
+#intune-device-root .it-operations { box-shadow: 0 8px 26px #18395c0d; }
+#intune-device-root .it-operations h3,#intune-device-root .it-device-summary strong { color: #294d7b; }
+#intune-device-root .it-operations header small,#intune-device-root .it-device-summary small { color: #536b87; }
+#intune-device-root .it-operations header>b { color: #174f9d; background: #edf4ff; border-color: #c9dcf7; }
+#intune-device-root .it-requirement>span,#intune-device-root .it-response>span { color: #506782; font-size: 8px; font-weight: 700; }
+#intune-device-root .it-requirement h4,#intune-device-root .it-response h4 { color: #294462; }
+#intune-device-root .it-requirement p,#intune-device-root .it-responsibility p { color: #526985; }
+#intune-device-root .it-requirement>div { color: #214f87; background: #f0f6ff; border-color: #d0e0f6; font-weight: 600; }
+#intune-device-root .it-responsibility { background: #f6f9fd; border-color: #d8e3f1; }
+#intune-device-root .it-responsibility strong { color: #294d7b; }
+#intune-device-root .it-user-result { box-shadow: 0 5px 18px #17385c13; }
+#intune-device-root .it-user-result h3 { color: #234a7d; font-weight: 600; }
+#intune-device-root .it-user-result p,#intune-device-root .it-user-result small { color: #435e7e; }
+#intune-device-root .it-user-result.blocked { border-color: #e6b9be; border-left-color: #c03945; background: #fff5f5; }
+#intune-device-root .it-user-result.blocked>i,#intune-device-root .it-user-result.blocked h3 { color: #a12633; }
+#intune-device-root .it-user-result.allowed { border-color: #afd8c1; border-left-color: #278454; background: #f0faf4; }
+#intune-device-root .it-user-result.allowed>i,#intune-device-root .it-user-result.allowed h3 { color: #17683e; }
+#intune-device-root .it-primary { background: #174f9d; border-color: #174f9d; font-weight: 600; }
+#intune-device-root .it-primary:hover { background: #103f81; }
+#intune-device-root .it-secondary { color: #174f9d; border-color: #b8cdea; background: #f2f7ff; font-weight: 600; }
+#intune-device-root .it-footer li { color: #526985; }
+#intune-device-root .it-footer li.current { color: #174f9d; font-weight: 700; }
+#intune-device-root .it-footer li.done>b { background: #eaf5ef; border-color: #b7ddc5; color: #1d7547; }
+#intune-device-root .it-footer>small { color: #526985; }
+#intune-device-root .it-recent { color: #405873; }
+#intune-device-root .it-recent p { color: #334b68; }
+#intune-device-root .it-recent small { color: #627891; }
+#intune-device-root .it-message { color: #254f88; background: #eff6ff; border-color: #cddff7; }
+#intune-device-root .it-device-checking { color: #174f9d; }
+
+@media(max-width:700px) {
+  #ca-demo-root .caw-stats>div { padding: 10px; }
+  #ca-demo-root .caw-stats strong { font-size: 20px; }
+  #purview-agent-root .pc-welcome { min-height: 0; padding: 18px 5px; }
+  #purview-agent-root .pc-starter-cards button { min-width: 0; }
+  #intune-device-root .it-operation-content { padding: 12px; }
+  #intune-device-root .it-story-heading h2 { font-size: 19px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .er-entry>button,.pa-launch>button,.it-launch button,.caw-home-launch .button,
+  #entra-reel-root .eo-episodes button,#entra-reel-root .eo-choices button,#entra-reel-root .eo-next,#entra-reel-root .eo-play,
+  #purview-agent-root .pc-starter-cards button,#intune-device-root .it-scenarios button { transition:none; }
+}

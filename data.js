@@ -1,0 +1,481 @@
+'use strict';
+
+const SecurityData = (() => {
+  const incidents = [
+    { id: 'INC-2481', title: 'Multi-stage attack involving phishing and identity theft', severity: 'Critical', product: 'Defender XDR', source: 'defender', status: 'In progress', entity: 'sarah.chen@contoso.com', unit: 'Finance', age: 1, time: '18 min ago', owner: 'Alex Morgan', alerts: 12, description: 'A phishing email was followed by an anomalous sign-in and a suspicious OAuth consent grant. Correlated email and identity signals require analyst validation.', steps: ['Defender for Office 365 flagged a credential-harvesting URL.', 'Entra ID Protection recorded an unfamiliar sign-in.', 'Defender for Cloud Apps flagged a suspicious application consent.'], recommendation: 'Validate the sign-in, revoke sessions if compromise is confirmed, investigate the OAuth grant, and remove malicious email.' },
+    { id: 'INC-2480', title: 'Suspicious PowerShell execution on a finance endpoint', severity: 'High', product: 'Defender for Endpoint', source: 'defender', status: 'In progress', entity: 'FIN-LT-042', unit: 'Finance', age: 1, time: '42 min ago', owner: 'Jordan Lee', alerts: 4, description: 'An encoded PowerShell command launched from an unusual parent process. EDR evidence includes a process tree and a blocked outbound connection.', steps: ['Endpoint detection recorded an encoded command.', 'Network protection blocked a known malicious domain.', 'Automated investigation is examining related artifacts.'], recommendation: 'Review the process tree and investigation evidence. Consider device isolation after assessing business impact.' },
+    { id: 'INC-2479', title: 'Sensitive financial data shared with an external domain', severity: 'High', product: 'Microsoft Purview DLP', source: 'purview', status: 'New', entity: 'Q4-Financials.xlsx', unit: 'Finance', age: 1, time: '1 hr ago', owner: 'Unassigned', alerts: 3, description: 'A DLP policy detected financial information in a file shared outside the organization. The policy blocked external access pending review.', steps: ['A sensitivity label identified confidential financial content.', 'A SharePoint DLP policy matched an external sharing event.', 'External access was blocked by the configured policy.'], recommendation: 'Review the sharing justification and policy match with the data owner. Retain the audit evidence.' },
+    { id: 'INC-2478', title: 'High-risk sign-in from an unfamiliar location', severity: 'High', product: 'Entra ID Protection', source: 'entra', status: 'New', entity: 'marcus.hill@contoso.com', unit: 'Engineering', age: 1, time: '2 hrs ago', owner: 'Unassigned', alerts: 2, description: 'A high-risk sign-in was blocked by a Conditional Access policy requiring a compliant device and an appropriate authentication strength.', steps: ['Identity Protection detected an unfamiliar sign-in.', 'Conditional Access evaluated the sign-in risk.', 'Access was blocked; no successful session is confirmed.'], recommendation: 'Contact the user through a trusted channel, investigate sign-in context, and remediate user risk if needed.' },
+    { id: 'INC-2477', title: 'Device compliance policy: encryption not enabled', severity: 'Medium', product: 'Microsoft Intune', source: 'intune', status: 'In progress', entity: 'OPS-LT-118', unit: 'Operations', age: 2, time: 'Yesterday', owner: 'Taylor Brooks', alerts: 1, description: 'A managed Windows device reported that BitLocker encryption is not enabled. The device is noncompliant and subject to the configured Conditional Access policy.', steps: ['The device checked in to Intune.', 'The encryption compliance setting evaluated as noncompliant.', 'A remediation policy is pending device check-in.'], recommendation: 'Confirm TPM readiness, review disk encryption policy assignment, and verify recovery key escrow before remediation.' },
+    { id: 'INC-2476', title: 'Malware blocked on an engineering workstation', severity: 'Medium', product: 'Defender for Endpoint', source: 'defender', status: 'Resolved', entity: 'ENG-WS-083', unit: 'Engineering', age: 3, time: 'Oct 31', owner: 'Alex Morgan', alerts: 2, description: 'Microsoft Defender Antivirus blocked and quarantined a malicious file. Automated investigation found no additional active artifacts.', steps: ['Real-time protection detected a malicious file.', 'The file was quarantined.', 'Investigation completed with no additional active threats.'], recommendation: 'Review the initial delivery vector and confirm no related detections before closing the case.' },
+    { id: 'INC-2475', title: 'Potential sensitive file collection before departure', severity: 'Medium', product: 'Purview Insider Risk', source: 'purview', status: 'New', entity: 'Anonymized user 018', unit: 'Operations', age: 5, time: 'Oct 29', owner: 'Case reviewer', alerts: 5, description: 'An Insider Risk Management policy identified unusual file activity. Anonymized identities are shown by default; this signal is not a determination of intent or misconduct.', steps: ['A configured policy detected unusual download volume.', 'An anonymized alert was created for authorized review.', 'No determination has been made.'], recommendation: 'Review context under approved privacy and access controls. Escalate only through the established case review workflow.' },
+    { id: 'INC-2474', title: 'Legacy authentication attempt blocked', severity: 'Low', product: 'Microsoft Entra ID', source: 'entra', status: 'Resolved', entity: 'svc-reports@contoso.com', unit: 'Engineering', age: 6, time: 'Oct 28', owner: 'Jordan Lee', alerts: 1, description: 'Conditional Access blocked a legacy authentication attempt. The service account requires migration to a supported modern authentication flow.', steps: ['A legacy client attempted authentication.', 'Conditional Access blocked access.', 'The application owner was notified.'], recommendation: 'Migrate the workload to modern authentication or a managed identity where supported.' },
+    { id: 'INC-2468', title: 'Application protection policy assignment conflict', severity: 'Low', product: 'Microsoft Intune', source: 'intune', status: 'Resolved', entity: 'Outlook for iOS', unit: 'Operations', age: 12, time: 'Oct 21', owner: 'Taylor Brooks', alerts: 1, description: 'Overlapping application protection assignments were reviewed and corrected for a pilot group.', steps: ['A policy reporting conflict was identified.', 'The overlapping assignment was reviewed.', 'A corrected assignment was deployed.'], recommendation: 'Validate deployment results after the next application policy refresh.' }
+  ];
+  const products = {
+    defender: { name: 'Microsoft Defender', short: 'Defender', icon: 'fa-shield-halved', color: '#2374dc', tagline: 'Detect, investigate, and respond across your environment.', score: 82, scoreName: 'Microsoft Secure Score', metrics: [['Active incidents', '24', '6 high priority'], ['Critical vulnerabilities', '47', 'Across 128 devices'], ['Protected endpoints', '12,408', '98.4% sensor coverage'], ['Threats blocked', '2,846', 'In the last 7 days']], capabilities: [
+      ['Microsoft Defender XDR', 'Correlated incidents, cross-domain investigation, automated attack disruption, and response.', 'Integrated', 'Security signals require the corresponding licensed workloads.'],
+      ['Defender for Endpoint', 'Endpoint Detection and Response (EDR), Attack Surface Reduction, and Automated Investigation and Response.', 'License-dependent', 'EDR and automated investigation depend on Defender for Endpoint Plan 2 or an eligible suite.'],
+      ['Defender for Office 365', 'Email and collaboration protection, phishing investigation, and campaign insights.', 'License-dependent', 'Advanced investigation and automation depend on Plan 2.'],
+      ['Defender for Identity', 'Identity threat detection using supported identity infrastructure signals.', 'License-dependent', 'Requires eligible licenses and configured identity sensors.'],
+      ['Defender for Cloud Apps', 'SaaS discovery, app governance, and session controls through supported integrations.', 'License-dependent', 'Session controls also depend on Conditional Access configuration.'],
+      ['Microsoft Defender Vulnerability Management', 'Risk-based vulnerability assessment and remediation tracking; foundational capabilities were formerly called Threat and Vulnerability Management.', 'License-dependent', 'Premium vulnerability management capabilities can require an add-on.'],
+      ['Threat Analytics & Advanced Hunting', 'Threat intelligence reports and KQL-based hunting across available security data.', 'Available capability', 'Available tables and retention depend on connected products and licensing.'],
+      ['Incident Management & Secure Score', 'Prioritize correlated incidents and measure improvement actions across supported products.', 'Integrated', 'Secure Score is a posture measure, not a guarantee of protection.']
+    ], columns: ['Device', 'Operating system', 'Exposure', 'Sensor health'], rows: [['FIN-LT-042', 'Windows 11 Enterprise', 'High', 'Active'], ['ENG-WS-083', 'Windows 11 Enterprise', 'Medium', 'Active'], ['OPS-LT-118', 'Windows 10 Enterprise', 'High', 'Active'], ['ENG-MAC-012', 'macOS 15', 'Low', 'Active']] },
+    intune: { name: 'Microsoft Intune', short: 'Intune', icon: 'fa-laptop', color: '#0a8c94', tagline: 'Manage endpoints. Apply policy. Keep access compliant.', score: 96.2, scoreName: 'Device compliance', metrics: [['Managed devices', '12,612', 'Windows, macOS, iOS & Android'], ['Compliant devices', '12,133', '96.2% of managed devices'], ['Noncompliant devices', '479', 'Requires remediation'], ['BitLocker enabled', '98.1%', 'Eligible Windows devices']], capabilities: [
+      ['Device Management & Inventory', 'Device enrollment, inventory, remote actions, and operating system reporting.', 'Available capability', 'Intune enrollment and platform support requirements apply.'],
+      ['Device Compliance', 'Evaluate device settings and report compliance for access decisions.', 'Integrated', 'Conditional Access enforcement requires Microsoft Entra ID P1 or above.'],
+      ['Configuration Profiles', 'Deploy device restrictions, settings catalog profiles, and configuration baselines.', 'Available capability', 'Settings and reporting vary by platform.'],
+      ['Endpoint Security Policies', 'Manage BitLocker encryption, antivirus, firewall, and attack surface reduction policies.', 'Integrated', 'Some settings depend on Windows edition and Defender integration.'],
+      ['Application Protection & MAM', 'Application Protection Policies and Mobile Application Management for supported apps, with or without device enrollment.', 'Available capability', 'Supported apps and platform-specific policy behavior apply.'],
+      ['Windows Autopilot', 'Provision organization-owned Windows devices using cloud-driven deployment profiles.', 'Integrated', 'Requires supported Windows editions, registration, and applicable Entra and Intune licensing.'],
+      ['Patch Management', 'Windows update rings, feature updates, quality update policies, and reporting.', 'Available capability', 'Windows Autopatch eligibility and third-party application patching have separate requirements.'],
+      ['Defender Integration & Compliance Reporting', 'Use Defender for Endpoint machine risk in compliance policies and track deployment outcomes.', 'Integrated', 'Requires a configured service connection and eligible Defender licenses.']
+    ], columns: ['Device', 'Operating system', 'Compliance', 'Encryption', 'Policy deployment'], rows: [['FIN-LT-042', 'Windows 11 Enterprise', 'Compliant', 'BitLocker enabled', 'Succeeded'], ['OPS-LT-118', 'Windows 10 Enterprise', 'Noncompliant', 'BitLocker not enabled', 'Pending'], ['ENG-MAC-012', 'macOS 15', 'Compliant', 'FileVault enabled', 'Succeeded'], ['MOB-IOS-206', 'iOS 26', 'Compliant', 'Device encryption enabled', 'Succeeded']] },
+    entra: { name: 'Microsoft Entra', short: 'Entra', icon: 'fa-fingerprint', color: '#5271df', tagline: 'Secure every identity and every access decision.', score: 91, scoreName: 'Identity Secure Score', metrics: [['MFA coverage', '98.6%', 'Registered eligible users'], ['Risky users', '18', '3 high risk'], ['Risky sign-ins', '126', '112 blocked by policy'], ['Privileged accounts', '42', '36 eligible through PIM']], capabilities: [
+      ['Microsoft Entra ID & SSO', 'Identity management and Single Sign-On (SSO) to integrated applications.', 'Available capability', 'Capabilities differ across Free, P1, and P2 editions.'],
+      ['MFA & Passwordless Authentication', 'Multi-Factor Authentication, passkeys (FIDO2), Windows Hello for Business, and supported passwordless methods.', 'Available capability', 'Authentication methods and enforcement options depend on configuration and licenses.'],
+      ['Conditional Access', 'Evaluate identity, device, application, location, and risk signals before granting access.', 'Integrated', 'Requires Entra ID P1; risk-based policies require P2.'],
+      ['Identity Protection', 'Investigate Risky Users and Risky Sign-ins and configure risk-based remediation.', 'License-dependent', 'Full Identity Protection capabilities require Entra ID P2.'],
+      ['Privileged Identity Management (PIM)', 'Time-bound privileged access with activation controls and audit history.', 'License-dependent', 'Requires an eligible Entra ID P2 or ID Governance entitlement.'],
+      ['Identity Governance & Access Reviews', 'Review and govern access using lifecycle controls and access certification.', 'License-dependent', 'Advanced governance capabilities can require Entra ID Governance or Entra Suite.'],
+      ['Entitlement Management', 'Manage access packages, request workflows, approvals, and expiration.', 'License-dependent', 'Entitlements and advanced features depend on governance licensing.'],
+      ['External Identities', 'Collaborate with guests and manage external access with supported identity flows.', 'License-dependent', 'External identity billing and premium feature requirements vary by scenario.']
+    ], columns: ['Identity', 'Risk level', 'MFA registration', 'Conditional Access'], rows: [['sarah.chen@contoso.com', 'High', 'Registered', 'Blocked'], ['marcus.hill@contoso.com', 'High', 'Registered', 'Blocked'], ['emma.wilson@contoso.com', 'Low', 'Passwordless', 'Granted'], ['svc-reports@contoso.com', 'Low', 'Not applicable', 'Blocked']] },
+    purview: { name: 'Microsoft Purview', short: 'Purview', icon: 'fa-eye', color: '#0c93a2', tagline: 'Understand your data. Protect what matters.', score: 87, scoreName: 'Demo policy alignment', metrics: [['DLP violations', '38', '12 require review'], ['Labeled documents', '84.2%', 'Of scanned in-scope content'], ['Insider risk alerts', '7', 'Anonymized for privacy'], ['Sensitive items', '148,206', 'Across configured locations']], capabilities: [
+      ['Information Protection & Sensitivity Labels', 'Classify and protect content using labels, encryption, and supported labeling policies.', 'License-dependent', 'Automatic labeling and advanced protection features require eligible premium licenses.'],
+      ['Data Loss Prevention (DLP)', 'Detect and control sensitive data sharing across supported Microsoft 365 and endpoint locations.', 'License-dependent', 'Endpoint DLP and advanced workloads have specific licensing requirements.'],
+      ['Insider Risk Management', 'Correlate policy signals and investigate potential data risks with privacy controls.', 'License-dependent', 'Requires eligible licenses, explicit policy setup, and role-based access.'],
+      ['Data Lifecycle & Records Management', 'Use retention policies, labels, records declaration, and disposition workflows.', 'License-dependent', 'Advanced records and retention capabilities require premium entitlements.'],
+      ['eDiscovery & Audit', 'Search, preserve, investigate, and audit supported content and activities.', 'License-dependent', 'Premium eDiscovery and Audit features have separate entitlement and retention requirements.'],
+      ['Communication Compliance', 'Review policy-matched communications using defined review workflows.', 'License-dependent', 'Requires configured policies, authorized reviewers, and eligible licenses.'],
+      ['Data Security Posture Management', 'Discover data risks and prioritize data security improvements across supported environments.', 'License-dependent', 'Availability, data sources, and billing depend on the specific DSPM capability.'],
+      ['Data Classification & Adaptive Protection', 'Discover sensitive information types and apply risk-informed DLP policy controls.', 'Integrated', 'Adaptive Protection requires configured Insider Risk Management and DLP with eligible licensing.']
+    ], columns: ['Policy', 'Location', 'Violations', 'Enforcement'], rows: [['Financial information', 'SharePoint Online', '14', 'Block'], ['Personal information', 'Exchange Online', '11', 'Block with override'], ['Confidential documents', 'Endpoint', '8', 'Audit'], ['Source code protection', 'Microsoft Teams', '5', 'Block']] }
+  };
+  const units = { all: { devices: 12612, compliance: 96.2, mfa: 98.6, risky: 18, critical: 47, dlp: 38, score: 82, identity: 91 }, Engineering: { devices: 6408, compliance: 97.4, mfa: 99.1, risky: 8, critical: 21, dlp: 8, score: 85, identity: 93 }, Finance: { devices: 2186, compliance: 95.1, mfa: 99.6, risky: 6, critical: 17, dlp: 21, score: 79, identity: 89 }, Operations: { devices: 4018, compliance: 94.9, mfa: 97.2, risky: 4, critical: 9, dlp: 9, score: 81, identity: 90 } };
+  const actions = [
+    { id: 'ACT-1091', title: 'Review device isolation recommendation', entity: 'FIN-LT-042', product: 'Defender for Endpoint', unit: 'Finance', age: 1, status: 'Pending approval', incident: 'INC-2480', description: 'Suspicious PowerShell activity requires analyst review. Confirm business impact and evidence before authorizing device isolation in a production environment.', history: [] },
+    { id: 'ACT-1090', title: 'Review session revocation recommendation', entity: 'sarah.chen@contoso.com', product: 'Microsoft Entra ID', unit: 'Finance', age: 1, status: 'Pending approval', incident: 'INC-2481', description: 'The correlated incident includes an anomalous sign-in. Validate the session and suspected compromise before revoking access through the supported identity service.', history: [] },
+    { id: 'ACT-1089', title: 'Review encryption remediation assignment', entity: 'OPS-LT-118', product: 'Microsoft Intune', unit: 'Operations', age: 2, status: 'Pending approval', incident: 'INC-2477', description: 'Confirm TPM readiness, encryption policy assignment, and recovery key escrow. This sample approval does not deploy or change an Intune policy.', history: [] },
+    { id: 'ACT-1088', title: 'Review external sharing restriction', entity: 'Q4-Financials.xlsx', product: 'Microsoft Purview', unit: 'Finance', age: 1, status: 'Completed', incident: 'INC-2479', description: 'The configured sample DLP policy blocked external access. The data owner review was recorded in the sample case.', history: [{ event: 'Sample data owner review completed', time: 'Nov 2, 2026, 08:15 UTC' }] },
+    { id: 'ACT-1087', title: 'Quarantine malicious file', entity: 'ENG-WS-083', product: 'Defender for Endpoint', unit: 'Engineering', age: 3, status: 'Completed', incident: 'INC-2476', description: 'The local sample investigation reports a quarantined file and no additional active artifacts. No action was performed by this dashboard.', history: [{ event: 'Quarantine recorded in sample investigation', time: 'Oct 31, 2026, 14:32 UTC' }] }
+  ];
+  const controls = {
+    defender: [['ASR - Block Office child processes', 'Attack surface reduction', 'Enabled', 'Windows endpoints'], ['EDR in block mode', 'Endpoint detection and response', 'Enabled', 'Eligible onboarded endpoints'], ['Safe Links - Standard protection', 'Defender for Office 365', 'Enabled', 'All supported recipients'], ['Automated investigation - Full automation', 'Device group automation', 'Enabled', 'Pilot device group']],
+    intune: [['Windows - Require BitLocker', 'Disk encryption', 'Enabled', 'Corporate Windows devices'], ['Windows - Security baseline', 'Configuration profile', 'Enabled', 'Corporate Windows devices'], ['Mobile - Protect organization data', 'Application protection', 'Enabled', 'Supported iOS and Android apps'], ['Windows - Quality updates - Pilot', 'Update ring', 'Enabled', 'Pilot device group']],
+    entra: [['CA001 - Require MFA for administrators', 'Conditional Access', 'Enabled', 'Eligible administrative roles'], ['CA002 - Block legacy authentication', 'Conditional Access', 'Enabled', 'In-scope users; emergency accounts excluded'], ['CA003 - Require compliant device', 'Conditional Access', 'Enabled', 'Selected cloud applications'], ['CA004 - High sign-in risk', 'Conditional Access', 'Report-only', 'Pilot users']],
+    purview: [['DLP - Financial information', 'Data loss prevention', 'Enabled', 'SharePoint Online'], ['DLP - Personal information', 'Data loss prevention', 'Enabled', 'Exchange Online'], ['Confidential - Automatic labeling', 'Information Protection', 'Report-only', 'Pilot document locations'], ['IRM - Unusual downloads', 'Insider Risk Management', 'Enabled', 'Configured policy scope']]
+  };
+  const hunting = {
+    processes: {
+      name: 'Encoded PowerShell process events',
+      table: 'DeviceProcessEvents',
+      query: 'DeviceProcessEvents\n| where Timestamp > ago({{days}}d)\n| where FileName in~ ("powershell.exe", "pwsh.exe")\n| where ProcessCommandLine has_any ("-enc", "-encodedcommand")\n| project Timestamp, DeviceName, AccountName, InitiatingProcessFileName\n| order by Timestamp desc',
+      columns: ['Timestamp (UTC)', 'DeviceName', 'AccountName', 'InitiatingProcessFileName'],
+      rows: [{ unit: 'Finance', age: 1, values: ['2026-11-02 09:00:00', 'FIN-LT-042', 'sarah.chen', 'winword.exe'] }, { unit: 'Engineering', age: 3, values: ['2026-10-31 14:29:00', 'ENG-WS-083', 'build.operator', 'cmd.exe'] }]
+    },
+    devices: {
+      name: 'Onboarded device inventory',
+      table: 'DeviceInfo',
+      query: 'DeviceInfo\n| where Timestamp > ago({{days}}d)\n| summarize arg_max(Timestamp, *) by DeviceId\n| project Timestamp, DeviceName, OSPlatform, OnboardingStatus\n| order by Timestamp desc',
+      columns: ['Timestamp (UTC)', 'DeviceName', 'OSPlatform', 'OnboardingStatus'],
+      rows: [{ unit: 'Finance', age: 1, values: ['2026-11-02 09:40:00', 'FIN-LT-042', 'Windows11', 'Onboarded'] }, { unit: 'Engineering', age: 1, values: ['2026-11-02 09:38:00', 'ENG-WS-083', 'Windows11', 'Onboarded'] }, { unit: 'Operations', age: 1, values: ['2026-11-02 09:35:00', 'OPS-LT-118', 'Windows10', 'Onboarded'] }, { unit: 'Engineering', age: 1, values: ['2026-11-02 09:32:00', 'ENG-MAC-012', 'macOS', 'Onboarded'] }]
+    }
+  };
+  // Fictional, read-only snapshot. No directory, Graph, sync service, or live backend is connected.
+  const entra = (() => {
+    const snapshot = '2026-11-02T09:42:00Z';
+    const tenantId = 'c027a690-621f-4d08-9341-9cb80c720261';
+    const guid = (family, index) => `c027a690-${family}-4d08-9341-${String(index).padStart(12, '0')}`;
+    const row = (id, unit, values, details, timeline, age) => ({
+      id, unit, values,
+      details: { label: values[0], ...details, 'Data source': 'Fictional Contoso fixture; no live backend', 'Snapshot (UTC)': snapshot, 'Access': 'Read-only; no directory changes are performed' },
+      ...(timeline ? { timeline } : {}), ...(age === undefined ? {} : { age })
+    });
+    const module = (title, subtitle, metrics, columns, rows, activity = false) => ({
+      title, subtitle, metrics, columns, rows, ...(activity ? { activity: true } : {})
+    });
+    const policySpecs = [
+      ['CA001 - Require MFA for administrators', 'Enabled', 'All directory administrative roles', 'Any location; browser and modern clients', 'Require phishing-resistant MFA', 'Priya Shah', '2026-10-28 15:10 UTC', '42 privileged identities in scope; 36 eligible through PIM; emergency accounts monitored separately.'],
+      ['CA002 - Block legacy authentication', 'Enabled', 'All users; all resources', 'Exchange ActiveSync and other legacy clients', 'Block access', 'Jordan Lee', '2026-10-26 11:20 UTC', '312 legacy attempts blocked in 7 days, including svc-reports on Oct 28.'],
+      ['CA003 - Require compliant device', 'Enabled', 'Finance and Engineering; finance ERP and source control', 'Windows and macOS; browser and desktop clients', 'Require device marked compliant', 'Taylor Brooks', '2026-10-29 10:05 UTC', '479 noncompliant managed devices tenant-wide; 31 access attempts blocked in the last 24 hours.'],
+      ['CA004 - Block high sign-in risk', 'Enabled', 'All users; all resources', 'Sign-in risk: High; any platform and location', 'Block access', 'Alex Morgan', '2026-10-30 16:40 UTC', '112 of 126 risky sign-ins blocked in the last 7 days; includes Sarah, Marcus, and Olivia. No report-only enforcement is claimed.'],
+      ['CA005 - Remediate high user risk', 'Enabled', 'All member users; all resources', 'User risk: High', 'Require MFA and secure password change', 'Alex Morgan', '2026-10-22 13:15 UTC', 'Requires password-based users to complete secure remediation; CA004 still blocks any high-risk sign-in.'],
+      ['CA006 - Require MFA outside trusted locations', 'Enabled', 'All employees; all resources', 'Locations outside Contoso corporate egress', 'Require MFA', 'Priya Shah', '2026-10-20 09:00 UTC', '4,186 external-network sessions satisfied MFA in 7 days; trusted location alone does not bypass CA001.'],
+      ['CA007 - Protect guest collaboration', 'Enabled', 'Guest and external users; Microsoft 365', 'Any location; cross-tenant MFA trust evaluated', 'Require MFA and accept terms of use', 'Maya Patel', '2026-10-27 14:25 UTC', '384 guests total; 362 accepted current collaboration terms.'],
+      ['CA008 - Require approved mobile data protection', 'Enabled', 'All employees; Exchange Online and SharePoint', 'iOS and Android mobile applications', 'Require app protection policy', 'Taylor Brooks', '2026-10-21 08:40 UTC', '1,824 protected mobile users; excludes enrollment bootstrap resources only.'],
+      ['CA009 - Restrict administrative portals', 'Enabled', 'All privileged role holders; Microsoft Admin Portals', 'Any device; all locations', 'Require compliant device and phishing-resistant MFA', 'Priya Shah', '2026-10-28 15:20 UTC', 'Administrative sessions require both controls; 7 unmanaged-device attempts blocked in 7 days.'],
+      ['CA010 - Protect authentication method registration', 'Enabled', 'All members; register security information user action', 'Any location; bootstrap group excluded for approved TAP enrollment', 'Require MFA', 'Nora Evans', '2026-10-25 12:00 UTC', '64 registrations in 24 hours; bootstrap exception expires after one hour.'],
+      ['CA011 - Terms for financial applications', 'Enabled', 'Finance; Contoso Finance ERP', 'Browser and modern clients', 'Require finance terms of use', 'Daniel Cho', '2026-10-19 10:30 UTC', '2,186 Finance identities covered; 98.9% accepted the FY27 terms.'],
+      ['CA012 - Restrict unsupported device platforms', 'Enabled', 'All employees; business-critical resources', 'Device platform: unsupported or unknown', 'Block access', 'Taylor Brooks', '2026-10-23 09:25 UTC', '16 unknown-platform attempts blocked in 7 days; supported Linux development access scoped separately.'],
+      ['CA013 - Protect Azure management', 'Enabled', 'Cloud administrators and production operators; Azure management', 'Any location; interactive authentication', 'Require phishing-resistant MFA', 'Jordan Lee', '2026-10-28 17:00 UTC', '84 production operators and privileged role holders; workload identities are not user MFA subjects.'],
+      ['CA014 - Remediate medium sign-in risk', 'Enabled', 'All employees; all resources', 'Sign-in risk: Medium', 'Require MFA', 'Alex Morgan', '2026-10-30 16:45 UTC', '14 medium-risk sign-ins completed MFA in 7 days; separate from 112 high-risk blocks.'],
+      ['CA015 - Block device code flow for general users', 'Enabled', 'All employees except approved CLI operators; all resources', 'Authentication flow: device code', 'Block access', 'Jordan Lee', '2026-10-24 13:00 UTC', '19 unapproved device-code requests blocked; CLI exception reviewed monthly.'],
+      ['CA016 - Finance session restrictions', 'Enabled', 'Finance; finance ERP and SharePoint', 'Browser sessions outside corporate egress', 'Require MFA; sign-in frequency 8 hours; no persistent browser', 'Daniel Cho', '2026-10-29 14:00 UTC', '412 Finance browser sessions reevaluated in 24 hours.'],
+      ['CA017 - Guest session protection', 'Enabled', 'Guest users; SharePoint Online', 'Browser sessions on unmanaged devices', 'Require MFA; app-enforced restrictions', 'Maya Patel', '2026-10-27 14:40 UTC', '86 unmanaged guest sessions restricted to supported web access in 7 days.'],
+      ['CA018 - Protect security service accounts', 'Enabled', 'Interactive service-account restriction group; all resources', 'Any interactive client and location', 'Block access', 'Jordan Lee', '2026-10-26 11:35 UTC', '12 service identities must use approved noninteractive flows; no MFA registration is claimed for svc-reports.'],
+      ['CA019 - Pilot phishing-resistant MFA for all employees', 'Report-only', '250 employee pilot users; all resources', 'Browser and modern clients; any location', 'Require phishing-resistant MFA', 'Nora Evans', '2026-10-31 10:10 UTC', '232 pilot users satisfy strength; 18 would need enrollment. Does not block access.'],
+      ['CA020 - Pilot compliant devices for all guests', 'Report-only', 'Guest users; Microsoft 365', 'All platforms; cross-tenant device trust evaluated', 'Require device marked compliant', 'Maya Patel', '2026-10-31 12:15 UTC', '61 of 384 guests would not satisfy device requirements; rollout awaits partner validation.']
+    ];
+    const policies = policySpecs.map((p, i) => ({
+      id: guid('ca00', i + 1), name: p[0], state: p[1], scope: p[2], conditions: p[3], grant: p[4],
+      exclusions: p[0].startsWith('CA010')
+        ? 'Two monitored cloud-only emergency access accounts; approved one-hour TAP bootstrap group'
+        : p[0].startsWith('CA015')
+          ? 'Two monitored cloud-only emergency access accounts; approved CLI operators group'
+          : 'Two monitored cloud-only emergency access accounts; no broad employee bypass',
+      owner: p[5], modified: p[6], insights: p[7]
+    }));
+    // Exactly 18 active risky users: Finance 6, Engineering 8, Operations 4.
+    // The remaining six directory sample rows have no active user risk.
+    const people = [
+      ['Sarah Chen', 'sarah.chen', 'Finance', 'High', 'Registered', 'Blocked', 'Financial Planning Lead', 'Leaked credentials; unfamiliar sign-in', '2026-11-02 09:24 UTC', 'Alex Morgan'],
+      ['Marcus Hill', 'marcus.hill', 'Engineering', 'High', 'Registered', 'Blocked', 'Senior Platform Engineer', 'Anomalous token; unfamiliar sign-in', '2026-11-02 07:42 UTC', 'Jordan Lee'],
+      ['Olivia Reed', 'olivia.reed', 'Operations', 'High', 'Registered', 'Blocked', 'Regional Operations Manager', 'Password spray correlation; unfamiliar sign-in', '2026-11-02 08:51 UTC', 'Alex Morgan'],
+      ['Daniel Cho', 'daniel.cho', 'Finance', 'Medium', 'Passwordless', 'MFA satisfied', 'Finance Systems Owner', 'Atypical travel; investigation pending', '2026-11-02 08:35 UTC', 'Priya Shah'],
+      ['Aisha Khan', 'aisha.khan', 'Finance', 'Medium', 'Registered', 'MFA satisfied', 'Senior Accountant', 'Unfamiliar sign-in properties', '2026-11-01 16:20 UTC', 'Alex Morgan'],
+      ['Leo Martin', 'leo.martin', 'Finance', 'Low', 'Passwordless', 'Granted', 'Treasury Analyst', 'Unfamiliar network; device recognized', '2026-11-01 13:08 UTC', 'Jordan Lee'],
+      ['Grace Liu', 'grace.liu', 'Finance', 'Low', 'Registered', 'Granted', 'Payroll Specialist', 'Atypical travel; travel verification requested', '2026-10-31 11:42 UTC', 'Priya Shah'],
+      ['Ethan Cole', 'ethan.cole', 'Finance', 'Medium', 'Registered', 'MFA satisfied', 'Procurement Analyst', 'Anonymous IP address', '2026-10-30 15:19 UTC', 'Alex Morgan'],
+      ['Emma Wilson', 'emma.wilson', 'Engineering', 'Low', 'Passwordless', 'Granted', 'Staff Software Engineer', 'Unfamiliar sign-in; recognized device', '2026-11-02 09:15 UTC', 'Jordan Lee'],
+      ['Noah Williams', 'noah.williams', 'Engineering', 'Medium', 'Registered', 'MFA satisfied', 'Site Reliability Engineer', 'Atypical travel', '2026-11-02 06:55 UTC', 'Jordan Lee'],
+      ['Isabella Rossi', 'isabella.rossi', 'Engineering', 'Medium', 'Passwordless', 'MFA satisfied', 'Engineering Manager', 'Anonymous IP address', '2026-11-01 18:31 UTC', 'Priya Shah'],
+      ['Liam Patel', 'liam.patel', 'Engineering', 'Low', 'Passwordless', 'Granted', 'Build Engineer', 'Unfamiliar sign-in properties', '2026-11-01 12:45 UTC', 'Jordan Lee'],
+      ['Sofia Garcia', 'sofia.garcia', 'Engineering', 'Medium', 'Registered', 'MFA satisfied', 'Application Developer', 'Anomalous token; review requested', '2026-10-31 17:28 UTC', 'Alex Morgan'],
+      ['Lucas Brown', 'lucas.brown', 'Engineering', 'Low', 'Passwordless', 'Granted', 'Data Engineer', 'Unfamiliar network', '2026-10-31 09:50 UTC', 'Jordan Lee'],
+      ['Mia Thompson', 'mia.thompson', 'Operations', 'Low', 'Registered', 'Granted', 'Operations Quality Coordinator', 'Atypical travel; itinerary requested', '2026-10-30 14:12 UTC', 'Priya Shah'],
+      ['Arjun Mehta', 'arjun.mehta', 'Engineering', 'Medium', 'Passwordless', 'MFA satisfied', 'Cloud Architect', 'Anonymous IP address', '2026-10-29 10:22 UTC', 'Jordan Lee'],
+      ['James Walker', 'james.walker', 'Operations', 'Medium', 'Registered', 'MFA satisfied', 'Logistics Coordinator', 'Unfamiliar sign-in properties', '2026-11-02 07:15 UTC', 'Alex Morgan'],
+      ['Chloe Davis', 'chloe.davis', 'Operations', 'Low', 'Passwordless', 'Granted', 'Service Desk Analyst', 'Atypical travel', '2026-11-01 08:11 UTC', 'Priya Shah'],
+      ['Benjamin Clark', 'benjamin.clark', 'Operations', 'None', 'Passwordless', 'Granted', 'Facilities Coordinator', 'No active detections', '2026-11-02 09:32 UTC', 'Taylor Brooks'],
+      ['Priya Shah', 'priya.shah', 'Engineering', 'None', 'Passwordless', 'Granted', 'Identity Engineering Lead', 'No active detections', '2026-11-02 09:38 UTC', 'Jordan Lee'],
+      ['Alex Morgan', 'alex.morgan', 'Operations', 'None', 'Passwordless', 'Granted', 'Security Operations Lead', 'No active detections', '2026-11-02 09:35 UTC', 'Priya Shah'],
+      ['Nora Evans', 'nora.evans', 'Engineering', 'None', 'Passwordless', 'Granted', 'Authentication Program Owner', 'No active detections', '2026-11-02 09:28 UTC', 'Priya Shah'],
+      ['Maya Patel', 'maya.patel', 'Operations', 'None', 'Passwordless', 'Granted', 'External Collaboration Owner', 'No active detections', '2026-11-02 09:20 UTC', 'Priya Shah'],
+      ['Reports Service', 'svc-reports', 'Engineering', 'None', 'Not applicable', 'Blocked', 'Legacy Reporting Service Account', 'No active user risk; legacy authentication blocked', '2026-10-28 03:14 UTC', 'Jordan Lee']
+    ];
+    const users = people.map((p, i) => row(guid('1000', i + 1), p[2],
+      [p[1] + '@contoso.com', p[0], p[2], p[3], p[4], p[5]],
+      { 'Display name': p[0], 'Job title': p[6], 'User type': 'Member', 'Account': 'Enabled', 'Object ID': guid('1000', i + 1),
+        'Identity source': i >= 19 && i <= 22 ? 'Cloud-only' : 'Windows Server AD via Entra Connect Sync',
+        'Risk evidence': p[7], 'Last observed activity': p[8], 'Review owner': p[9],
+        'Authentication': p[4] === 'Passwordless' ? 'Passkey (FIDO2) and Windows Hello for Business; Authenticator backup' : p[4] === 'Not applicable' ? 'Noninteractive workload migration pending; interactive access blocked' : 'Microsoft Authenticator push with number matching; no SMS or voice',
+        'Sample scope': '24 selected directory identities; aggregate directory count is 12,840' },
+      [`2026-10-26 08:00 UTC — Account attributes included in fictional directory snapshot.`, `${p[8]} — ${p[7]}.`, '2026-11-02 09:42 UTC — Read-only snapshot captured; no live lookup.']));
+    const riskyUsers = users.filter((u) => u.values[3] !== 'None').map((u, i) => {
+      const p = people[i];
+      const age = Math.max(1, Math.ceil((Date.parse(snapshot) - Date.parse(p[8].replace(' UTC', 'Z').replace(' ', 'T'))) / 86400000));
+      return row(u.id, u.unit, [p[1] + '@contoso.com', p[3], 'At risk', p[7], p[8], p[9]],
+        { 'Object ID': u.id, 'Risk state': 'At risk; not dismissed or remediated', 'Detection': p[7], 'Assigned investigator': p[9],
+          'Access outcome': p[3] === 'High' ? 'Latest high-risk sign-in blocked by Enabled CA004; no successful session for that attempt' : 'Medium-risk attempts require MFA; user risk remains pending investigation',
+          'Investigation': p[1] === 'sarah.chen' ? 'INC-2481: earlier session and OAuth consent remain under investigation; blocking the latest attempt does not revoke earlier sessions.' : p[1] === 'marcus.hill' ? 'INC-2478: high-risk attempt blocked; compliant-device and authentication-strength controls also evaluated.' : 'Verify travel and device context through a trusted channel before risk dismissal.',
+          'Population': 'Complete active-risk fixture population: 18 users, 3 High, 8 Medium, 7 Low; Finance 6 / Engineering 8 / Operations 4' },
+        [`${p[8]} — Risk detection recorded in fixture.`, `${p[8]} — ${p[3] === 'High' ? 'CA004 blocked this high-risk sign-in.' : 'Investigation queued; no automatic risk dismissal.'}`, '2026-11-02 09:42 UTC — Awaiting analyst review.'], age);
+    });
+    const signInSpecs = [
+      ['2026-11-02 09:38 UTC', 'priya.shah', 'Engineering', 'Microsoft Admin Portals', 'Success', 'Low', '192.0.2.10', 'London corporate egress', 'Passkey (FIDO2)', 'CA001, CA009: satisfied', 'ENG-PAW-004'],
+      ['2026-11-02 09:35 UTC', 'alex.morgan', 'Operations', 'Microsoft Defender', 'Success', 'Low', '192.0.2.11', 'London corporate egress', 'Windows Hello for Business', 'CA006: not applicable (trusted location)', 'OPS-PAW-002'],
+      ['2026-11-02 09:32 UTC', 'benjamin.clark', 'Operations', 'Microsoft Teams', 'Success', 'Low', '192.0.2.20', 'Manchester corporate egress', 'Windows Hello for Business', 'CA006: not applicable (trusted location)', 'OPS-LT-031'],
+      ['2026-11-02 09:28 UTC', 'nora.evans', 'Engineering', 'Authentication methods administration', 'Success', 'Low', '192.0.2.13', 'London corporate egress', 'Passkey (FIDO2)', 'CA001, CA009: satisfied', 'ENG-PAW-006'],
+      ['2026-11-02 09:24 UTC', 'sarah.chen', 'Finance', 'Microsoft 365', 'Blocked', 'High', '203.0.113.84', 'Unfamiliar external network (simulated)', 'Password; access blocked before MFA', 'CA004: block access (Enabled)', 'Unknown device'],
+      ['2026-11-02 09:20 UTC', 'maya.patel', 'Operations', 'SharePoint Online', 'Success', 'Low', '198.51.100.27', 'Approved remote worker (simulated)', 'Passkey (FIDO2)', 'CA006: MFA satisfied', 'OPS-LT-045'],
+      ['2026-11-02 09:15 UTC', 'emma.wilson', 'Engineering', 'GitHub Enterprise SSO', 'Success', 'Low', '198.51.100.28', 'Remote developer (simulated)', 'Windows Hello for Business', 'CA003: compliant device satisfied', 'ENG-WS-083'],
+      ['2026-11-02 08:51 UTC', 'olivia.reed', 'Operations', 'Exchange Online', 'Blocked', 'High', '203.0.113.85', 'Unfamiliar external network (simulated)', 'Password; access blocked before MFA', 'CA004: block access (Enabled)', 'Unknown device'],
+      ['2026-11-02 08:35 UTC', 'daniel.cho', 'Finance', 'Contoso Finance ERP', 'Success', 'Medium', '198.51.100.31', 'Remote finance worker (simulated)', 'Passkey (FIDO2)', 'CA003, CA014: satisfied; CA016 session controls', 'FIN-LT-014'],
+      ['2026-11-02 07:42 UTC', 'marcus.hill', 'Engineering', 'Azure management', 'Blocked', 'High', '203.0.113.86', 'Unfamiliar external network (simulated)', 'Token request; no session issued', 'CA004: block access (Enabled)', 'Unrecognized browser'],
+      ['2026-11-02 07:15 UTC', 'james.walker', 'Operations', 'Contoso Logistics Hub', 'Success', 'Medium', '198.51.100.32', 'Remote logistics worker (simulated)', 'Authenticator number matching', 'CA014: MFA satisfied', 'OPS-LT-066'],
+      ['2026-11-02 06:55 UTC', 'noah.williams', 'Engineering', 'Azure management', 'Success', 'Medium', '198.51.100.33', 'Approved on-call network (simulated)', 'Passkey (FIDO2)', 'CA013, CA014: satisfied', 'ENG-LT-028'],
+      ['2026-11-01 18:31 UTC', 'isabella.rossi', 'Engineering', 'GitHub Enterprise SSO', 'Success', 'Medium', '198.51.100.34', 'Remote engineering worker (simulated)', 'Windows Hello for Business', 'CA003, CA014: satisfied', 'ENG-LT-033'],
+      ['2026-11-01 16:20 UTC', 'aisha.khan', 'Finance', 'Contoso Finance ERP', 'Success', 'Medium', '198.51.100.35', 'Approved remote worker (simulated)', 'Authenticator number matching', 'CA003, CA014: satisfied', 'FIN-LT-027'],
+      ['2026-10-31 17:28 UTC', 'sofia.garcia', 'Engineering', 'Microsoft 365', 'Success', 'Medium', '198.51.100.36', 'Remote application developer (simulated)', 'Authenticator number matching', 'CA014: MFA satisfied', 'ENG-LT-039'],
+      ['2026-10-28 03:14 UTC', 'svc-reports', 'Engineering', 'Exchange Online', 'Blocked', 'Low', '203.0.113.90', 'Legacy reporting job (simulated)', 'Legacy IMAP basic authentication', 'CA002: block legacy authentication (Enabled)', 'Unregistered legacy client']
+    ];
+    const signins = signInSpecs.map((s, i) => row(guid('2000', i + 1), s[2],
+      [s[0], s[1] + '@contoso.com', s[3], s[4], ['priya.shah', 'alex.morgan', 'benjamin.clark', 'nora.evans', 'maya.patel', 'svc-reports'].includes(s[1]) ? 'None' : s[5], s[6]],
+      { 'Correlation ID': guid('2100', i + 1), 'Application': s[3], 'Location': s[7], 'IP address': s[6],
+        'Network note': 'Documentation-only address; location labels are fictional, not geolocation claims',
+        'Authentication': s[8], 'Conditional Access': s[9], 'Device': s[10],
+        'Error code': s[4] === 'Blocked' ? '53003 — Blocked by Conditional Access' : '0 — Success',
+        'Session': s[4] === 'Blocked' ? 'No successful access token/session issued for this attempt' : 'Token issued after applicable policy controls were satisfied',
+        'Sample scope': '16 selected events, not the complete 7-day event population' },
+      [`${s[0]} — Authentication request recorded.`, `${s[0]} — ${s[9]}.`, `${s[0]} — ${s[4] === 'Blocked' ? 'Access denied.' : 'Resource access granted.'}`],
+      Math.max(1, Math.ceil((Date.parse(snapshot) - Date.parse(s[0].replace(' UTC', 'Z').replace(' ', 'T'))) / 86400000))));
+    const groups = [
+      ['Finance - All Employees', 'Finance', 'Dynamic security', '2,186', 'Daniel Cho', 'department -eq Finance; synchronized employees only'],
+      ['Engineering - All Employees', 'Engineering', 'Dynamic security', '6,408', 'Priya Shah', 'department -eq Engineering; employee lifecycle driven'],
+      ['Operations - All Employees', 'Operations', 'Dynamic security', '4,018', 'Taylor Brooks', 'department -eq Operations; excludes contractor guests'],
+      ['Identity - Privileged Eligible', 'all', 'Role-assignable security', '36', 'Priya Shah', 'Assigned membership; PIM eligibility does not create permanent active roles'],
+      ['Finance - ERP Approvers', 'Finance', 'Assigned security', '84', 'Daniel Cho', 'Quarterly access review; separation-of-duties approval required'],
+      ['Engineering - Production Operators', 'Engineering', 'Assigned security', '84', 'Jordan Lee', 'Approved operators for Azure production access'],
+      ['Operations - Logistics Supervisors', 'Operations', 'Microsoft 365', '126', 'Olivia Reed', 'Private collaboration group; two designated backup owners'],
+      ['External - Fabrikam Project Atlas', 'Engineering', 'Assigned security', '42', 'Maya Patel', 'Partner access package governs membership and 90-day expiry'],
+      ['Identity - Passwordless Pilot', 'all', 'Assigned security', '250', 'Nora Evans', 'CA019 report-only pilot; 232 users already satisfy authentication strength'],
+      ['Identity - Emergency Access', 'all', 'Role-assignable security', '2', 'Priya Shah', 'Cloud-only emergency identities; monitored and tested monthly']
+    ].map((g, i) => row(guid('3000', i + 1), g[1], [g[0], g[2], g[3], g[4], 'Active'],
+      { 'Object ID': guid('3000', i + 1), 'Membership rule / purpose': g[5], 'Access review': 'Owner certification recorded 2026-10-15; next review 2027-01-15', 'Population': '10 selected groups from 512; memberships overlap and do not sum to directory users' }));
+    const devices = [
+      ['FIN-LT-042', 'Finance', 'Windows 11 Enterprise 25H2', 'Hybrid joined', 'Compliant', 'Sarah Chen', '2026-11-02 09:40 UTC'],
+      ['FIN-LT-014', 'Finance', 'Windows 11 Enterprise 25H2', 'Hybrid joined', 'Compliant', 'Daniel Cho', '2026-11-02 09:34 UTC'],
+      ['FIN-LT-027', 'Finance', 'Windows 11 Enterprise 25H2', 'Hybrid joined', 'Compliant', 'Aisha Khan', '2026-11-02 09:12 UTC'],
+      ['ENG-WS-083', 'Engineering', 'Windows 11 Enterprise 25H2', 'Hybrid joined', 'Compliant', 'Emma Wilson', '2026-11-02 09:38 UTC'],
+      ['ENG-MAC-012', 'Engineering', 'macOS 15', 'Registered', 'Compliant', 'Lucas Brown', '2026-11-02 09:32 UTC'],
+      ['ENG-PAW-004', 'Engineering', 'Windows 11 Enterprise 25H2', 'Entra joined', 'Compliant', 'Priya Shah', '2026-11-02 09:38 UTC'],
+      ['OPS-LT-118', 'Operations', 'Windows 10 Enterprise LTSC 2021', 'Hybrid joined', 'Noncompliant', 'Olivia Reed', '2026-11-02 09:35 UTC'],
+      ['OPS-LT-031', 'Operations', 'Windows 11 Enterprise 25H2', 'Hybrid joined', 'Compliant', 'Benjamin Clark', '2026-11-02 09:32 UTC'],
+      ['MOB-IOS-206', 'Operations', 'iOS 26', 'Registered', 'Compliant', 'Chloe Davis', '2026-11-02 09:25 UTC'],
+      ['ENG-LT-028', 'Engineering', 'Windows 11 Enterprise 25H2', 'Entra joined', 'Compliant', 'Noah Williams', '2026-11-02 09:05 UTC']
+    ].map((d, i) => row(guid('4000', i + 1), d[1], [d[0], d[2], d[3], d[4], d[5], d[6]],
+      { 'Device ID': guid('4100', i + 1), 'Management': 'Microsoft Intune', 'Owner': d[5],
+        'Encryption': d[0] === 'OPS-LT-118' ? 'BitLocker not enabled; INC-2477 remediation pending' : d[0].includes('MAC') ? 'FileVault enabled; recovery key escrowed' : d[0].includes('IOS') ? 'Platform encryption enabled' : 'BitLocker enabled; recovery key escrowed',
+        'Device risk': d[0] === 'FIN-LT-042' ? 'High; Defender investigation INC-2480 remains open despite current compliance status' : 'Low; no active device-risk elevation in fixture',
+        'Population': '10 selected identity devices; managed inventory aggregate is 12,612' }));
+    const appSpecs = [
+      ['Microsoft 365', 'all', 'Microsoft first-party', '12,840', 'Priya Shah', 'SAML / OIDC; tenant-wide productivity access'],
+      ['Contoso Finance ERP', 'Finance', 'Enterprise SAML', '2,186', 'Daniel Cho', 'SAML SSO; SCIM provisioning; CA003 and CA011'],
+      ['GitHub Enterprise SSO', 'Engineering', 'Enterprise SAML', '6,408', 'Isabella Rossi', 'SAML SSO; SCIM groups; compliant device required'],
+      ['Contoso Logistics Hub', 'Operations', 'OIDC custom', '4,018', 'Taylor Brooks', 'Authorization code with PKCE; operations assignment required'],
+      ['Workday HR', 'all', 'Enterprise SAML', '12,840', 'Maya Patel', 'HR-driven inbound provisioning; HR security group assignment'],
+      ['ServiceNow', 'Operations', 'Enterprise SAML', '420', 'Chloe Davis', 'SAML SSO and SCIM; service management support teams'],
+      ['Azure management', 'Engineering', 'Microsoft first-party', '84', 'Jordan Lee', 'Production operator population; phishing-resistant MFA'],
+      ['Contoso Partner Portal', 'Engineering', 'OIDC custom', '192', 'Maya Patel', 'B2B collaboration; access packages and terms of use'],
+      ['Power BI', 'Finance', 'Microsoft first-party', '1,240', 'Daniel Cho', 'Finance analytics; workspace permissions governed independently'],
+      ['Contoso Expense Approvals', 'Finance', 'OIDC custom', '2,186', 'Aisha Khan', 'Delegated permissions; admin consent approved 2026-10-14']
+    ];
+    const applications = appSpecs.map((a, i) => row(guid('5000', i + 1), a[1], [a[0], a[2], 'Enabled', a[3], a[4]],
+      { 'Service principal ID': guid('5000', i + 1), 'Application ID': guid('5100', i + 1), 'Integration': a[5],
+        'Assignment required': a[2] === 'Microsoft first-party' ? 'Resource-specific assignment and authorization' : 'Yes',
+        'Consent': 'Reviewed by Cloud Application Administrator; no unreviewed tenant-wide grant in this inventory subset',
+        'Provisioning': a[5].includes('SCIM') ? 'Healthy; last fixture cycle 2026-11-02 09:30 UTC' : 'Not configured; access managed through assignments',
+        'Population': '10 selected enterprise applications (service principals) from 146; distinct from 38 app registrations' }));
+    const registrationSpecs = [
+      ['Contoso Logistics API', 'Operations', 'Single tenant', 'Certificate', '2027-05-01', 'Taylor Brooks', 'Logistics.Read; application permission restricted to operational integration'],
+      ['Contoso Finance ERP Connector', 'Finance', 'Single tenant', 'Certificate', '2027-03-15', 'Daniel Cho', 'Finance.Export; ERP nightly reconciliation with least privilege'],
+      ['Contoso Partner Portal', 'Engineering', 'Single tenant', 'Federated credential', 'Not applicable', 'Maya Patel', 'OIDC web application; guests represented as B2B tenant identities'],
+      ['Contoso Build Automation', 'Engineering', 'Single tenant', 'Federated credential', 'Not applicable', 'Liam Patel', 'GitHub Actions workload federation; repository and branch subject restricted'],
+      ['Contoso Expense Approvals', 'Finance', 'Single tenant', 'Certificate', '2027-01-31', 'Aisha Khan', 'User.Read delegated; no directory write permissions'],
+      ['Contoso Inventory Mobile', 'Operations', 'Single tenant', 'Public client / PKCE', 'Not applicable', 'James Walker', 'No client secret; Inventory.Read delegated scope'],
+      ['Contoso Reporting Migration', 'Engineering', 'Single tenant', 'Client secret', '2026-11-20', 'Jordan Lee', 'Migration from svc-reports; rotate to certificate before production cutover'],
+      ['Contoso Governance Export', 'Engineering', 'Single tenant', 'Certificate', '2027-07-01', 'Priya Shah', 'AuditLog.Read.All application permission; approved read-only compliance export']
+    ];
+    const registrations = registrationSpecs.map((a, i) => row(guid('6000', i + 1), a[1], [a[0], a[2], a[3], a[4], a[5]],
+      { 'Application (client) ID': guid('6100', i + 1), 'Object ID': guid('6000', i + 1), 'Permissions and purpose': a[6],
+        'Credential material': 'No secret values, private keys, or usable tokens are included in this fixture',
+        'Redirect configuration': a[3] === 'Public client / PKCE' ? 'Native application loopback redirect; PKCE required' : a[0].includes('Portal') ? 'https://partners.contoso.com/signin-oidc' : 'Daemon integrations have no interactive redirect URI',
+        'Population': '8 selected application registrations from 38; credentials and permissions reviewed 2026-10-28' }));
+    const roleSpecs = [
+      ['Global Administrator', '4', '2', 'Approval + phishing-resistant MFA', 'Priya Shah', '2 emergency permanent accounts; 4 eligible administrators'],
+      ['Privileged Role Administrator', '3', '0', 'Approval + phishing-resistant MFA', 'Priya Shah', 'Role activation limited to 1 hour'],
+      ['Security Administrator', '8', '2', 'Approval + MFA', 'Alex Morgan', 'Two permanent SOC automation administration accounts'],
+      ['Conditional Access Administrator', '5', '0', 'Approval + phishing-resistant MFA', 'Priya Shah', 'Change ticket and 1-hour maximum activation'],
+      ['Authentication Administrator', '6', '1', 'Justification + MFA', 'Nora Evans', 'One permanent service desk duty account'],
+      ['Cloud Application Administrator', '4', '0', 'Approval + MFA', 'Maya Patel', 'Consent and credential management separated from app ownership'],
+      ['Groups Administrator', '3', '1', 'Justification + MFA', 'Taylor Brooks', 'One permanent group provisioning account'],
+      ['Identity Governance Administrator', '3', '0', 'Approval + MFA', 'Maya Patel', 'Access package and lifecycle workflow administration']
+    ];
+    const roles = roleSpecs.map((r, i) => row(guid('7000', i + 1), 'all', [r[0], r[1], r[2], r[3], r[4]],
+      { 'Scope': 'Directory-wide', 'Role controls': r[5], 'Review cadence': 'Monthly privileged access certification; last completed 2026-10-30',
+        'Count definition': '36 unique eligible accounts + 6 permanent-only accounts = 42 privileged accounts; fixture role assignments are nonoverlapping for counting',
+        'Active definition': 'Permanent column excludes temporary PIM activations; eligible identities remain eligible during activation' }));
+    const pimSpecs = [
+      ['Priya Shah', 'Engineering', 'Conditional Access Administrator', 'Active (eligible)', '2026-11-02 10:20 UTC', 'CHG-6402', 'Alex Morgan'],
+      ['Alex Morgan', 'Operations', 'Security Administrator', 'Active (eligible)', '2026-11-02 10:00 UTC', 'INC-2481', 'Priya Shah'],
+      ['Jordan Lee', 'Engineering', 'Privileged Role Administrator', 'Eligible', '2027-01-31', 'Quarterly eligibility', 'Priya Shah'],
+      ['Nora Evans', 'Engineering', 'Authentication Administrator', 'Active (eligible)', '2026-11-02 10:10 UTC', 'SR-8214', 'Priya Shah'],
+      ['Maya Patel', 'Operations', 'Identity Governance Administrator', 'Eligible', '2027-01-31', 'Quarterly eligibility', 'Priya Shah'],
+      ['Daniel Cho', 'Finance', 'Groups Administrator', 'Eligible', '2026-12-31', 'Finance ERP ownership', 'Taylor Brooks'],
+      ['Isabella Rossi', 'Engineering', 'Cloud Application Administrator', 'Eligible', '2027-01-31', 'Engineering SaaS ownership', 'Maya Patel'],
+      ['Taylor Brooks', 'Operations', 'Global Administrator', 'Eligible', '2026-12-31', 'Disaster recovery duty rotation', 'Priya Shah']
+    ];
+    const pim = pimSpecs.map((p, i) => row(guid('7100', i + 1), p[1], [p[0], p[2], p[3], p[4], p[6]],
+      { 'Justification / ticket': p[5], 'Activation policy': 'Approval, phishing-resistant MFA for privileged roles, justification, and ticket required; 1-hour maximum',
+        'Expiration definition': p[3].startsWith('Active') ? 'Displayed expiry is current temporary activation end' : 'Displayed expiry is eligibility end date',
+        'Population': '8 selected assignments; aggregate 42 privileged accounts, 36 eligible, 6 permanent-only, 3 currently activated eligible accounts',
+        'Audit': 'Activation and approval records are fictional and immutable in this dashboard' },
+      [p[3].startsWith('Active') ? `2026-11-02 ${i === 0 ? '09:20' : i === 1 ? '09:00' : '09:10'} UTC — ${p[6]} approved ${p[5]}; eligible role activated for one hour.` : '2026-10-30 15:00 UTC — Eligibility certified by role owner.', `${p[4]} — ${p[3].startsWith('Active') ? 'Scheduled activation expiry; role returns to eligible.' : 'Scheduled eligibility expiry.'}`]));
+    const methodSpecs = [
+      ['Passkey (FIDO2)', 'Enabled', 'All employees', '6,420', 'Phishing-resistant', 'Device-bound security keys and approved synced passkey profiles; attestation enforced for administrator keys'],
+      ['Microsoft Authenticator', 'Enabled', 'All employees', '11,982', 'Push / passwordless', 'Number matching required; application name and location context enabled; 3,250 users have phone sign-in'],
+      ['Windows Hello for Business', 'Enabled', 'Corporate Windows users', '8,910', 'Phishing-resistant', 'Cloud Kerberos trust; TPM-backed keys and PIN/biometric unlock on supported managed devices'],
+      ['Temporary Access Pass', 'Enabled', 'Approved enrollment bootstrap', '24', 'Time-limited bootstrap', '24 unexpired issued passes at snapshot; one-time use, 60-minute lifetime; secret values never displayed'],
+      ['Certificate-based authentication', 'Enabled', 'Privileged workstation pilot', '84', 'Phishing-resistant profile', 'High-affinity certificate binding and approved issuing CAs; certificate MFA policy configured'],
+      ['Software OATH tokens', 'Enabled', 'Approved exception group', '310', 'Time-based OTP', 'Documented accessibility and offline exceptions; not accepted for phishing-resistant admin policies'],
+      ['SMS', 'Disabled', 'No users allowed', '0', 'Not permitted', 'Disabled as an authentication method; 624 historical phone attributes retained for contact/recovery inventory only'],
+      ['Voice call', 'Disabled', 'No users allowed', '0', 'Not permitted', 'Voice authentication disabled; 112 historical phone records are not usable MFA registrations']
+    ];
+    const authentication = methodSpecs.map((m, i) => row(guid('8000', i + 1), 'all', [m[0], m[1], m[2], m[3], m[4]],
+      { 'Configuration': m[5], 'Registration count definition': m[0] === 'Temporary Access Pass' ? '24 users with an unexpired TAP; not counted as durable MFA registration' : 'Users registered for this method; users can register multiple methods and counts are not additive',
+        'Policy owner': 'Nora Evans', 'Last reviewed': '2026-10-31 14:00 UTC', 'Passwordless aggregate': '9,810 of 12,840 users (76.4%, rounded) have at least one approved passwordless method; method populations overlap' }));
+    const mfa = users.filter((u) => u.values[4] !== 'Not applicable').slice(0, 12).map((u, i) => row(guid('8100', i + 1), u.unit,
+      [u.values[0], 'Registered', u.values[4] === 'Passwordless' ? 'Passkey / WHfB' : 'Authenticator', u.values[4] === 'Passwordless' ? 'Yes' : 'No', 'Policy-driven'],
+      { 'Methods registered': u.details.Authentication, 'MFA enforcement': 'Conditional Access; per-user MFA legacy enforcement is not used',
+        'Latest evaluation': u.values[3] === 'High' ? 'High-risk sign-in blocked by CA004 before a new MFA challenge; registration does not override a block' : 'Applicable authentication strength evaluated at sign-in',
+        'Population': '12 selected registered users; tenant aggregate 12,660 registered / 12,840 eligible = 98.6% rounded; 180 registration gaps',
+        'Enrollment campaign': 'Registration-gap users receive targeted Authenticator and passkey enrollment notices; SMS and voice disabled' }));
+    const governanceSpecs = [
+      ['Joiner provisioning', 'all', 'Healthy', '124', 'Maya Patel', 'HR start-date workflow provisions employees and baseline groups; 124 completed in 7 days'],
+      ['Mover access alignment', 'all', 'Healthy', '38', 'Priya Shah', 'Department change removes old dynamic memberships and assigns new baseline access; 38 completed in 7 days'],
+      ['Leaver access removal', 'all', 'Healthy', '17', 'Alex Morgan', 'Disable sign-in, revoke sessions, remove governed access; 17 completed in 7 days'],
+      ['Finance separation of duties', 'Finance', 'Review required', '3', 'Daniel Cho', 'Three ERP requester/approver conflicts await owner certification; not confirmed abuse'],
+      ['Guest sponsor recertification', 'Engineering', 'In progress', '42', 'Maya Patel', 'Project Atlas partner sponsorship under 90-day review; no automatic removals performed by this UI'],
+      ['Privileged eligibility certification', 'all', 'Completed', '36', 'Priya Shah', 'All 36 eligible privileged accounts certified 2026-10-30; six permanent-only accounts reviewed separately']
+    ];
+    const governance = governanceSpecs.map((g, i) => row(guid('9000', i + 1), g[1], [g[0], g[2], g[3], g[4], '2026-11-02 09:30 UTC'],
+      { 'Workflow evidence': g[5], 'Execution mode': 'Simulated prior workflow results only; no live provisioning or destructive action', 'Exception handling': 'Owner approval and audit trail required before access changes', 'Measurement': 'Affected identity count for this workflow; populations can overlap' }));
+    const reviewSpecs = [
+      ['Finance ERP quarterly certification', 'Finance', 'In progress', '84', '62 / 84', '2026-11-06', 'Daniel Cho', '58 retain, 4 remove recommended; 22 pending; recommendations not applied'],
+      ['Production operators monthly review', 'Engineering', 'In progress', '84', '76 / 84', '2026-11-04', 'Jordan Lee', '74 retain, 2 remove recommended; 8 pending'],
+      ['Project Atlas guest review', 'Engineering', 'In progress', '42', '30 / 42', '2026-11-09', 'Maya Patel', '28 retain, 2 remove recommended; 12 pending sponsor responses'],
+      ['Logistics supervisors certification', 'Operations', 'Scheduled', '126', '0 / 126', '2026-11-16', 'Taylor Brooks', 'Starts 2026-11-09; no decisions submitted'],
+      ['Privileged eligible accounts', 'all', 'Completed', '36', '36 / 36', '2026-10-30', 'Priya Shah', '36 retained; no eligibility removals recommended'],
+      ['Permanent privileged accounts', 'all', 'Completed', '6', '6 / 6', '2026-10-30', 'Alex Morgan', '6 retained with documented operational justification; includes two emergency accounts']
+    ];
+    const reviews = reviewSpecs.map((r, i) => row(guid('9100', i + 1), r[1], [r[0], r[2], r[3], r[4], r[5], r[6]],
+      { 'Decision summary': r[7], 'Reviewer model': 'Resource owner with designated backup; no self-approval', 'Apply results': 'Manual owner approval; fixture contains no live removal action', 'Recurrence': r[0].includes('quarterly') ? 'Quarterly' : 'Monthly or project milestone', 'Review ID': guid('9100', i + 1) }));
+    const entitlementSpecs = [
+      ['Finance ERP Analyst', 'Finance', 'Finance services', '186', 'Manager + Daniel Cho', '180 days', 'Read-only financial reports; excludes payment approval role'],
+      ['Production On-call Operator', 'Engineering', 'Engineering services', '84', 'Manager + Jordan Lee', '30 days', 'Production operator group; privileged elevation remains separately controlled by PIM'],
+      ['Project Atlas Partner', 'Engineering', 'External collaboration', '42', 'Sponsor + Maya Patel', '90 days', 'Partner Teams workspace, SharePoint site and portal application'],
+      ['Logistics Regional Supervisor', 'Operations', 'Operations services', '126', 'Manager + Taylor Brooks', '180 days', 'Logistics dashboards and regional operations workspace'],
+      ['Finance Audit Guest', 'Finance', 'External collaboration', '18', 'Sponsor + Daniel Cho', '30 days', 'Time-limited audit data room; no access to payment or payroll administration'],
+      ['Engineering Research Workspace', 'Engineering', 'Engineering services', '64', 'Project owner', '90 days', 'Research repository and project collaboration site; source export restrictions apply']
+    ];
+    const entitlements = entitlementSpecs.map((e, i) => row(guid('9200', i + 1), e[1], [e[0], e[2], e[3], e[4], e[5]],
+      { 'Resources': e[6], 'Assignment policy': 'Approval required; expiration enforced; extension requires recertification', 'External access': e[2] === 'External collaboration' ? 'Connected organization example.com; sponsor and terms required' : 'Employee requests only', 'Population': '6 selected packages of 24; displayed assignment populations may overlap' }));
+    const externalSpecs = [
+      ['Avery Stone', 'avery.stone@example.com', 'Engineering', 'Project Atlas', 'Accepted', '2026-12-15', 'Maya Patel'],
+      ['Riley Brooks', 'riley.brooks@example.com', 'Engineering', 'Project Atlas', 'Accepted', '2026-12-15', 'Maya Patel'],
+      ['Morgan Price', 'morgan.price@example.com', 'Finance', 'Finance audit', 'Accepted', '2026-11-30', 'Daniel Cho'],
+      ['Quinn Bell', 'quinn.bell@example.com', 'Finance', 'Finance audit', 'Pending acceptance', '2026-11-30', 'Daniel Cho'],
+      ['Casey Young', 'casey.young@example.com', 'Operations', 'Logistics integration', 'Accepted', '2026-12-01', 'Taylor Brooks'],
+      ['Jamie Scott', 'jamie.scott@example.com', 'Operations', 'Warehouse pilot', 'Accepted', '2026-11-20', 'Taylor Brooks']
+    ];
+    const external = externalSpecs.map((e, i) => row(guid('9300', i + 1), e[2], [e[1], e[3], e[4], e[6], e[5]],
+      { 'Display name': e[0], 'User type': 'Guest (B2B collaboration)', 'Guest UPN': `${e[1].replace('@', '_')}#EXT#@contoso.onmicrosoft.com`,
+        'Home organization': 'Fabrikam partner (fictional); example.com', 'Cross-tenant settings': 'Trust partner MFA after issuer validation; device trust limited to approved partner configuration',
+        'Terms of use': e[4] === 'Accepted' ? 'Collaboration terms v3 accepted 2026-10-15' : 'Invitation pending; no resource access issued',
+        'Population': '6 selected guests from 384; 362 have accepted current terms' }));
+    const auditSpecs = [
+      ['2026-11-02 09:30 UTC', 'Contoso Governance Provisioner', 'Update user', 'Joiner batch: 7 employee profiles', 'Success', 'all', 'HR correlation HR-20261102-07; department and manager attributes synchronized'],
+      ['2026-11-02 09:20 UTC', 'priya.shah@contoso.com', 'Activate eligible role', 'Conditional Access Administrator', 'Success', 'Engineering', 'CHG-6402; approved by Alex Morgan; expires 10:20 UTC'],
+      ['2026-11-02 09:10 UTC', 'nora.evans@contoso.com', 'Activate eligible role', 'Authentication Administrator', 'Success', 'Engineering', 'SR-8214; approved by Priya Shah; expires 10:10 UTC'],
+      ['2026-11-02 09:00 UTC', 'alex.morgan@contoso.com', 'Activate eligible role', 'Security Administrator', 'Success', 'Operations', 'INC-2481; approved by Priya Shah; expires 10:00 UTC'],
+      ['2026-11-02 08:45 UTC', 'maya.patel@contoso.com', 'Invite external user', 'quinn.bell@example.com', 'Success', 'Finance', 'Finance Audit Guest package; sponsor Daniel Cho; invitation not yet redeemed'],
+      ['2026-11-02 08:30 UTC', 'daniel.cho@contoso.com', 'Submit access review decision', 'Finance ERP quarterly certification', 'Success', 'Finance', 'Four removal recommendations recorded; results not yet applied'],
+      ['2026-11-02 09:15 UTC', 'Contoso Connect Sync', 'Export directory changes', 'Contoso production tenant', 'Success', 'all', '18 updates, 2 additions, 0 deletions; last complete export without errors'],
+      ['2026-11-01 15:20 UTC', 'nora.evans@contoso.com', 'Register authentication method', 'benjamin.clark@contoso.com', 'Success', 'Operations', 'Assisted passkey enrollment verified; no credential material retained in audit fixture'],
+      ['2026-10-31 12:15 UTC', 'maya.patel@contoso.com', 'Update Conditional Access policy', 'CA020 - Pilot compliant devices for all guests', 'Success', 'Operations', 'Report-only retained; 61 potential device gaps under partner validation'],
+      ['2026-10-31 10:10 UTC', 'nora.evans@contoso.com', 'Update Conditional Access policy', 'CA019 - Pilot phishing-resistant MFA for all employees', 'Success', 'Engineering', 'Report-only pilot scope set to 250 users; no enforcement change'],
+      ['2026-10-30 16:40 UTC', 'alex.morgan@contoso.com', 'Update Conditional Access policy', 'CA004 - Block high sign-in risk', 'Success', 'Operations', 'Enabled; all users and resources except two monitored emergency accounts'],
+      ['2026-10-28 15:10 UTC', 'priya.shah@contoso.com', 'Update Conditional Access policy', 'CA001 - Require MFA for administrators', 'Success', 'Engineering', 'Phishing-resistant authentication strength applied to administrative roles']
+    ];
+    const audit = auditSpecs.sort((a, b) => b[0].localeCompare(a[0])).map((a, i) => row(guid('9400', i + 1), a[5], [a[0], a[1], a[2], a[3], a[4]],
+      { 'Activity ID': guid('9400', i + 1), 'Correlation ID': guid('9410', i + 1), 'Evidence': a[6],
+        'Actor type': a[1].includes('@') ? 'User' : 'Service principal / sync service', 'Category': a[2].includes('role') ? 'RoleManagement' : a[2].includes('policy') ? 'Policy' : 'UserManagement',
+        'Integrity': 'Seeded fictional audit event, not exported from a real tenant; read-only' },
+      [`${a[0]} — ${a[1]}: ${a[2]}.`, `${a[0]} — ${a[4]}; ${a[6]}.`],
+      Math.max(1, Math.ceil((Date.parse(snapshot) - Date.parse(a[0].replace(' UTC', 'Z').replace(' ', 'T'))) / 86400000))));
+    const connectSpecs = [
+      ['Active synchronization server', 'Healthy', 'CTSO-SYNC-01', '2026-11-02 09:30 UTC', 'Active export server; scheduled delta interval 30 minutes; no pending export errors'],
+      ['Staging synchronization server', 'Healthy', 'CTSO-SYNC-02', '2026-11-02 09:30 UTC', 'Staging mode; imports and synchronization only; exports disabled to prevent duplicate writes'],
+      ['Password hash synchronization', 'Healthy', 'Enabled', '2026-11-02 09:40 UTC', 'Last simulated password hash batch successful; plaintext passwords never included'],
+      ['AD DS connector', 'Healthy', 'corp.contoso.com', '2026-11-02 09:30 UTC', '12,420 synchronized member accounts; 420 cloud-only members; 384 guests counted separately'],
+      ['Entra connector export', 'Healthy', '20 changes', '2026-11-02 09:15 UTC', 'Last complete export: 18 attribute updates, 2 additions, 0 deletions; next scheduled export 09:45 UTC'],
+      ['Accidental deletion protection', 'Enabled', '500-object threshold', '2026-11-02 09:30 UTC', 'No blocked export batches; deletion threshold not reached']
+    ];
+    const connect = connectSpecs.map((c, i) => row(guid('9500', i + 1), 'all', c.slice(0, 4),
+      { 'Health evidence': c[4], 'Topology': 'One active Entra Connect Sync server and one staging server; password hash synchronization',
+        'Health simulation': 'Healthy hybrid sync is simulated fixture state only. No server, connector, agent, or backend is contacted.',
+        'Measurement': 'Import and synchronization timestamps are separate from last completed export timestamp', 'Owner': 'Priya Shah' }));
+    const tenant = [
+      row(guid('9600', 1), 'all', ['Contoso Ltd', 'Production workforce', tenantId, 'United Kingdom'], { 'Primary domain': 'contoso.com', 'Initial domain': 'contoso.onmicrosoft.com', 'Created': '2017-06-14', 'Data residency': 'Europe; workload-specific commitments apply', 'Directory population': '12,840 member accounts plus 384 guests; user summary counts members only' }),
+      row(guid('9600', 2), 'all', ['contoso.com', 'Verified custom domain', 'Default', 'Managed authentication'], { 'Verification': 'DNS verification represented as complete in fixture; no DNS queries performed', 'Authentication': 'Password hash synchronization with cloud authentication; no federation dependency' }),
+      row(guid('9600', 3), 'all', ['contoso.onmicrosoft.com', 'Initial domain', 'Verified', 'Managed authentication'], { 'Purpose': 'Initial tenant namespace; emergency cloud-only accounts remain independent of on-premises sign-in infrastructure' }),
+      row(guid('9600', 4), 'all', ['Microsoft Entra ID P2', 'License inventory', '12,840 assigned', '13,000 purchased'], { 'Entitlement scope': 'P2 capabilities represented in this demo; feature use still depends on configuration and current product terms', 'Available seats': '160' }),
+      row(guid('9600', 5), 'all', ['Microsoft Entra ID Governance', 'License inventory', '1,200 assigned', '1,500 purchased'], { 'Entitlement scope': 'Governance-entitled scoped populations; not a claim that every tenant user has advanced governance entitlement', 'Available seats': '300' }),
+      row(guid('9600', 6), 'all', ['Security defaults', 'Disabled', 'Conditional Access managed', '20 policies'], { 'Reason': 'Custom Conditional Access baseline used instead of security defaults; 18 enabled and 2 report-only policies', 'Emergency access': 'Two excluded cloud-only accounts with independent alerting and monthly access tests' })
+    ];
+    const profileUser = users.find((u) => u.values[0] === 'priya.shah@contoso.com');
+    const profileRole = pim.find((p) => p.values[0] === profileUser.values[1]);
+    const profile = [
+      row(guid('9700', 1), profileUser.unit,
+        [profileUser.values[0], profileUser.values[1], profileUser.details['Job title'], profileUser.unit, profileUser.details.Account, profileRole.values[1]],
+        { ...profileUser.details, 'Sample scope': 'Selected fictional user profile; sample persona, not the signed-in user',
+          'Department': profileUser.unit, 'Organization': 'Contoso Ltd', 'Email': profileUser.values[0],
+          'User risk': profileUser.values[3], 'MFA registration': profileUser.values[4],
+          'Directory role': profileRole.values[1], 'Role assignment state': profileRole.values[2],
+          'Activation expiry (UTC)': profileRole.values[3], 'Activation approver': profileRole.values[4],
+          'Role context': 'Eligible Conditional Access Administrator, temporarily activated through PIM; role ownership in the roles table does not imply additional assignments',
+          'Session context': 'No authenticated dashboard session; sign-in history is fictional snapshot evidence only' },
+        profileRole.timeline)
+    ];
+    const locationSpecs = [
+      ['London corporate egress', 'IP named location', '192.0.2.0/28', 'Trusted', 'Corporate headquarters; 192.0.2.10 and .11 appear in sign-in examples'],
+      ['Manchester corporate egress', 'IP named location', '192.0.2.16/28', 'Trusted', 'Regional operations office; separate egress range'],
+      ['Dublin engineering lab', 'IP named location', '192.0.2.32/28', 'Trusted', 'Managed development lab; not a device-compliance exemption'],
+      ['Approved remote network examples', 'IP named location', '198.51.100.0/24', 'Not trusted', 'Remote worker fixture examples; MFA and device policies still apply'],
+      ['Unfamiliar external network examples', 'IP named location', '203.0.113.0/24', 'Not trusted', 'Risk investigation fixture addresses; network label alone does not establish compromise'],
+      ['Primary operating countries', 'Country named location', 'United Kingdom; Ireland; United States', 'Not trusted', 'Country grouping for reporting only; not an automatic access exemption']
+    ];
+    const locations = locationSpecs.map((l, i) => row(guid('9800', i + 1), 'all', l.slice(0, 4),
+      { 'Purpose': l[4], 'Address disclaimer': 'Only RFC 5737 documentation IPv4 ranges used; no real corporate egress disclosed', 'Owner': 'Jordan Lee', 'Last reviewed': '2026-10-28', 'Policy interaction': 'Trusted location never bypasses high sign-in risk block or administrator authentication strength' }));
+    const scoreSpecs = [
+      ['Block legacy authentication', 'Complete', '10 / 10', 'CA002', 'Jordan Lee', 'Enabled across all users with monitored emergency exclusions'],
+      ['Protect administrators with phishing-resistant MFA', 'Complete', '15 / 15', 'CA001 / CA009', 'Priya Shah', 'Administrative roles require strong authentication and compliant privileged workstations'],
+      ['Block high-risk sign-ins', 'Complete', '15 / 15', 'CA004', 'Alex Morgan', 'Enabled, not report-only; 112 risky sign-ins blocked in 7 days'],
+      ['Complete MFA registration', 'In progress', '14 / 15', '180 registration gaps', 'Nora Evans', '12,660 of 12,840 eligible members registered; registration is distinct from enforcement'],
+      ['Expand passwordless adoption', 'In progress', '7 / 10', '76.4% adoption', 'Nora Evans', '9,810 members have an approved passwordless method; CA019 remains report-only'],
+      ['Review privileged access', 'Complete', '15 / 15', '42 accounts certified', 'Priya Shah', '36 eligible and 6 permanent-only accounts reviewed; 3 eligible accounts currently activated'],
+      ['Govern guest lifecycle', 'In progress', '5 / 8', '22 terms gaps', 'Maya Patel', '362 of 384 guests accepted terms; partner device readiness under CA020 evaluation'],
+      ['Use workload credential federation', 'In progress', '10 / 12', '1 expiring sample secret', 'Jordan Lee', 'Reporting migration secret expires Nov 20; reviewed app subset does not represent every credential']
+    ];
+    const secureScore = scoreSpecs.map((s, i) => row(guid('9900', i + 1), 'all', s.slice(0, 5),
+      { 'Improvement evidence': s[5], 'Score definition': 'Fictional identity posture score: 91 / 100; eight selected actions contribute 91 / 100 points in this model, not an official scoring algorithm', 'Evaluation': '2026-11-02 09:00 UTC', 'Caution': 'Posture score is not a guarantee of protection; blocked incidents and open user investigations can coexist' }));
+    const favoriteSpecs = [
+      ['High-risk users', 'risky-users', 'Alex Morgan', '3 high-risk identities', 'Investigate Sarah, Marcus, and Olivia; blocking does not resolve user risk'],
+      ['Recent sign-in activity', 'signins', 'Jordan Lee', '16 selected events', 'Review authentication outcomes, Conditional Access decisions, and correlation IDs'],
+      ['Privileged activations', 'pim', 'Priya Shah', '3 current activations', 'Validate approvals and automatic expiry for the current duty rotation'],
+      ['Authentication readiness', 'authentication', 'Nora Evans', '8 methods', 'Track durable registration separately from time-limited bootstrap passes'],
+      ['Quarterly certifications', 'access-reviews', 'Maya Patel', '6 selected reviews', 'Pending owner decisions do not change resource assignments in this fixture'],
+      ['Hybrid identity health', 'connect', 'Priya Shah', 'Healthy simulation', 'Inspect active/staging topology; no live health API is connected']
+    ];
+    const favorites = favoriteSpecs.map((f, i) => row(guid('9910', i + 1), 'all', f.slice(0, 4), { 'Purpose': f[4], 'Module key': f[1], 'Saved view': 'Tenant-wide read-only fixture bookmark; not a persisted browser preference' }));
+    const modules = {
+      users: module('Users', '24 selected member identities from 12,840; guests listed separately. Read-only fictional directory.', [['Member accounts', '12,840', '12,420 synced; 420 cloud-only'], ['MFA registered', '12,660', '98.6% of 12,840 eligible'], ['Passwordless', '76.4%', '9,810 unique members; rounded'], ['Active risky users', '18', '3 high; 8 medium; 7 low']], ['Identity', 'Display name', 'Department', 'Risk level', 'MFA registration', 'Conditional Access'], users),
+      groups: module('Groups', 'Selected overlapping security and collaboration memberships; no membership actions.', [['Groups', '512', 'Tenant-wide aggregate'], ['Dynamic groups', '186', 'Department and lifecycle rules'], ['Role-assignable', '12', 'Assigned membership only'], ['Sample groups', '10', 'Membership counts overlap']], ['Group', 'Type', 'Members', 'Owner', 'Status'], groups),
+      devices: module('Devices', 'Identity device records joined to simulated Intune compliance; selected inventory only.', [['Managed devices', '12,612', 'Intune aggregate, not sample size'], ['Compliant', '12,133', '96.2% rounded'], ['Noncompliant', '479', 'Includes OPS-LT-118'], ['Sample devices', '10', 'Join state and encryption evidence']], ['Device', 'Operating system', 'Join type', 'Compliance', 'Owner', 'Last check-in (UTC)'], devices),
+      applications: module('Enterprise applications', 'Service principal inventory; distinct from application registrations.', [['Enterprise applications', '146', 'Tenant-wide service principals'], ['SSO configured', '132', 'SAML / OIDC / first-party integrations'], ['SCIM provisioned', '28', 'Subset of integrated applications'], ['Sample applications', '10', 'Assigned populations overlap']], ['Application', 'Integration', 'Status', 'Assigned users', 'Owner'], applications),
+      'app-registrations': module('App registrations', 'Application objects and credential posture; no usable credential material.', [['Registrations', '38', 'Tenant-owned application objects'], ['Federated credentials', '12', 'Registrations with federation'], ['Expiring credentials', '3', 'Within 30 days; 1 shown'], ['Sample registrations', '8', 'Certificate, federation, public client, secret']], ['Application', 'Audience', 'Credential type', 'Credential expiry', 'Owner'], registrations),
+      roles: module('Roles and administrators', 'Eight selected built-in roles account for this fixture privileged population.', [['Privileged accounts', '42', 'Unique identities'], ['PIM eligible', '36', 'Eligible, including activated users'], ['Permanent-only', '6', 'Includes 2 emergency accounts'], ['Activated eligible', '3', 'Additional temporary active roles']], ['Role', 'Eligible accounts', 'Permanent accounts', 'Activation control', 'Owner'], roles),
+      pim: module('Privileged Identity Management', 'Eight selected assignments; tenant-wide aggregates are not the table row count.', [['Privileged accounts', '42', '36 eligible + 6 permanent-only'], ['Eligible', '36', 'Time-bound activation configured'], ['Currently activated', '3', 'All expire by 10:20 UTC'], ['Pending requests', '0', 'No approval action in dashboard']], ['Identity', 'Role', 'Assignment state', 'Expiry (UTC)', 'Approver / owner'], pim),
+      authentication: module('Authentication methods', 'Per-method registration can overlap; SMS and voice authentication disabled.', [['MFA registered', '12,660', '180 members still need registration'], ['Passwordless users', '9,810', '76.4% of 12,840 rounded'], ['Unexpired TAPs', '24', 'Bootstrap only, not durable registration'], ['Disabled methods', '2', 'SMS and voice call']], ['Method', 'Policy state', 'Scope', 'Registered / issued users', 'Strength / purpose'], authentication),
+      mfa: module('Multifactor authentication', 'Selected registration records; Conditional Access enforcement differs from registration.', [['Eligible members', '12,840', 'Defined member enrollment population'], ['Registered members', '12,660', '98.6% rounded'], ['Registration gaps', '180', 'Targeted enrollment campaign'], ['Sample registrations', '12', 'No per-user legacy MFA enforcement']], ['Identity', 'Registration', 'Primary methods', 'Passwordless', 'Enforcement'], mfa),
+      signins: module('Sign-in logs', '16 selected events with fictional documentation IPs; snapshot at 09:42 UTC.', [['Successful sign-ins', '128,426', '7 days; full fixture aggregate'], ['Risky sign-ins', '126', '112 high blocked; 14 medium MFA'], ['Risky sign-ins blocked', '112', 'Enabled CA004; subset of all blocks'], ['All sign-ins blocked', '662', '7 days; risk and other policy blocks']], ['Timestamp (UTC)', 'Identity', 'Application', 'Result', 'Sign-in risk', 'IP address'], signins, true),
+      'risky-users': module('Risky users', 'Complete active-risk fixture population; user risk is not the same as sign-in risk.', [['At-risk users', '18', 'Finance 6; Engineering 8; Operations 4'], ['High', '3', 'Sarah Chen; Marcus Hill; Olivia Reed'], ['Medium', '8', 'MFA does not automatically dismiss user risk'], ['Low', '7', 'Investigation remains open']], ['Identity', 'Risk level', 'Risk state', 'Detection', 'Last detection (UTC)', 'Investigator'], riskyUsers, true),
+      governance: module('Identity Governance', 'Lifecycle and certification workflow evidence; historical simulation, no provisioning backend.', [['Lifecycle workflows', '12', 'Tenant aggregate; 6 selected views'], ['Joiners completed', '124', 'Last 7 days'], ['Leavers completed', '17', 'Last 7 days; simulated'], ['SoD exceptions', '3', 'Finance owner review required']], ['Workflow', 'State', 'Affected identities', 'Owner', 'Evidence captured (UTC)'], governance),
+      'access-reviews': module('Access reviews', 'Six selected certifications; decisions are not applied by this read-only dashboard.', [['Selected reviews', '6', '3 in progress; 1 scheduled; 2 complete'], ['Selected subjects', '378', 'Review subjects; may overlap'], ['Decisions submitted', '210', 'Across selected reviews'], ['Removal recommendations', '8', 'Await owner application']], ['Review', 'Status', 'Subjects', 'Decisions', 'Due date', 'Owner'], reviews),
+      entitlements: module('Entitlement management', 'Selected access packages with approvals, separation of duties, and expiry.', [['Access packages', '24', 'Tenant-wide aggregate'], ['Catalogs', '4', 'Finance, Engineering, Operations, External'], ['Pending requests', '12', 'Tenant-wide; no approval UI'], ['Selected packages', '6', '520 assignments; identities may overlap']], ['Access package', 'Catalog', 'Assignments', 'Approval', 'Maximum duration'], entitlements),
+      external: module('External Identities', 'Six selected partner guests using example.com; 384 guests separate from member count.', [['Guest accounts', '384', 'Tenant-wide guest population'], ['Terms accepted', '362', '22 pending current terms'], ['Selected guests', '6', '5 accepted invitations; 1 pending'], ['Partner device gaps', '61', 'CA020 report-only impact estimate']], ['External identity', 'Project', 'Invitation status', 'Sponsor', 'Access expiry'], external),
+      audit: module('Audit logs', 'Seeded fixture actors, actions, targets and timestamps; not real tenant audit exports.', [['Selected audit events', '12', 'Oct 28 through Nov 2'], ['Policy changes', '4', 'Selected historical change events'], ['Role activations', '3', 'Approved; time-limited'], ['Failed events', '0', 'Selected subset only']], ['Timestamp (UTC)', 'Actor', 'Action', 'Target', 'Result'], audit, true),
+      connect: module('Entra Connect', 'Healthy hybrid synchronization simulation only; explicitly no live backend or server connection.', [['Synced members', '12,420', 'Plus 420 cloud-only members'], ['Sync topology', '1 + 1', 'Active server and staging server'], ['Last successful export', '09:15 UTC', '20 changes; next export 09:45 UTC'], ['Export errors', '0', 'Healthy fixture; not a live health check']], ['Component', 'State', 'Value', 'Last evidence (UTC)'], connect),
+      tenant: module('Tenant overview', 'Contoso workforce configuration, domain and license inventory; all fictional.', [['Members', '12,840', 'Guests counted separately'], ['Guests', '384', 'B2B collaboration'], ['Verified domains', '2', 'Custom plus initial domain'], ['CA policies', '20', '18 enabled; 2 report-only']], ['Setting', 'Type / state', 'Value', 'Context'], tenant),
+      profile: module('User profile', 'Priya Shah — fictional sample persona, not the signed-in user. Organization configuration is in Tenant overview.', [['Sample profiles', '1', 'Selected directory user, not a session'], ['Account status', 'Enabled', 'Member; cloud-only identity'], ['User risk', 'None', 'No active user-risk detections'], ['Directory roles', '1', 'Conditional Access Administrator; PIM active']], ['Identity', 'Display name', 'Job title', 'Department', 'Account status', 'Directory role'], profile),
+      locations: module('Named locations', 'Documentation-only network ranges; fictional location names, not real IP geolocation.', [['Named locations', '6', '5 IP groups; 1 country group'], ['Trusted IP locations', '3', 'Not a universal policy bypass'], ['Untrusted IP groups', '2', 'Remote and unfamiliar examples'], ['Country groups', '1', 'Reporting, not exemption']], ['Location', 'Type', 'Definition', 'Trust'], locations),
+      'secure-score': module('Identity Secure Score', 'Fictional posture model, not a protection guarantee or official scoring calculation.', [['Identity score', '91 / 100', 'Selected fixture actions total 91 points'], ['Complete actions', '4', 'Of 8 selected actions'], ['In-progress actions', '4', 'Registration, passwordless, guests, workloads'], ['Registration gap', '180', '12,840 eligible minus 12,660 registered']], ['Improvement action', 'State', 'Points', 'Evidence', 'Owner'], secureScore),
+      favorites: module('Favorites', 'Preseeded identity operations bookmarks; all linked module records are read-only.', [['Saved views', '6', 'Preseeded fixture bookmarks'], ['Operational owners', '5', 'Identity, SOC and collaboration teams'], ['High-risk focus', '3 users', 'Blocked latest high-risk sign-ins'], ['Live actions', '0', 'No persistence or backend']], ['Saved view', 'Module', 'Owner', 'Focus'], favorites)
+    };
+    return {
+      snapshot, tenantId, readOnly: true, liveBackend: false,
+      description: 'Fictional Contoso workforce tenant, 2 November 2026 09:42 UTC. All rows read-only; healthy hybrid sync is simulated. No live backend, Graph API, connector, provisioning, or response action.',
+      summary: { users: 12840, groups: 512, applications: 146, guests: 384, appRegistrations: 38, passwordless: 76.4, mfaRegistered: 12660, mfaEligible: 12840 },
+      trend: { successful: [17842, 18436, 19205, 18674, 16982, 18053, 19234], blocked: [82, 91, 87, 105, 96, 89, 112], mfa: [12640, 13020, 13680, 13240, 11980, 12910, 13860] },
+      trendDates: ['2026-10-27', '2026-10-28', '2026-10-29', '2026-10-30', '2026-10-31', '2026-11-01', '2026-11-02'],
+      trendNotes: 'UTC calendar-day fixture buckets; Nov 2 partial through 09:42. Successful totals 128,426; blocked totals 662 across all reasons; MFA counts are successful sign-ins with MFA satisfied, including existing claims, not unique users or challenge counts. 112 high-risk blocks are a subset of 662 total blocks.',
+      policies, modules
+    };
+  })();
+  controls.entra = entra.policies.map((p) => [p.name, 'Conditional Access', p.state, p.scope]);
+  products.entra.rows = entra.modules.users.rows.map((u) => [u.values[0], u.values[3], u.values[4], u.values[5]]);
+  return { incidents, products, units, actions, controls, hunting, entra, snapshot: '2026-11-02T09:42:00Z' };
+})();

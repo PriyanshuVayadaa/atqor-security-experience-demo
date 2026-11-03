@@ -1,0 +1,10 @@
+# Local rollback archives and workstation-only tools
+rollback.ps1
+*.zip
+*.zip.manifest.json
+
+# Local editor and environment state
+.vscode/
+.env
+.env.*
+!.env.example
