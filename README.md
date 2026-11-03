@@ -88,7 +88,17 @@ At the warning, the audience can **stop and report** or **continue with the fict
 
 Controls include previous/next, play/pause, replay, scene pace, evidence details, keyboard/Escape behavior, and responsive presentation. Browser reputation, Defender for Endpoint, Defender XDR, and analyst actions are shown as separate capabilities with configuration/licensing caveats. A warning is not guaranteed for every file; endpoint detection and incident correlation depend on supported products, sensor coverage, configuration and available telemetry. Isolation is not malware removal or verified recovery. This is a fixed local narrative, not a sensor demo or connected tenant workflow; no actual download, execution, API request, isolation, removal, or tenant response occurs.
 
-Implementation: [defender-attack-reel.js](defender-attack-reel.js), [defender-attack-reel-ui.js](defender-attack-reel-ui.js), [defender-attack-reel.css](defender-attack-reel.css), routing in [app.js](app.js), and [tests/defender-attack-reel.test.cjs](tests/defender-attack-reel.test.cjs). The full suite contains **109 passing tests**. Browser checks cover both employee and analyst branches, the in-screen choices, evidence drawer, keyboard exit, and desktop full-screen geometry.
+Implementation: [defender-attack-reel.js](defender-attack-reel.js), [defender-attack-reel-ui.js](defender-attack-reel-ui.js), [defender-attack-reel.css](defender-attack-reel.css), routing in [app.js](app.js), and [tests/defender-attack-reel.test.cjs](tests/defender-attack-reel.test.cjs). The full suite contains **127 passing tests**. Browser checks cover both employee and analyst branches, the in-screen choices, evidence drawer, keyboard exit, and desktop full-screen geometry.
+
+### Product stories: Entra, Intune and Purview
+
+Each product has a cinematic, realistic-screen story built on the same engine as the Defender reel (desktop only, fictional, offline). Launch from the product Home card or the menu entry.
+
+- **Microsoft Entra · Sign-in story**: a sign-in with a leaked password is flagged by ID Protection, blocked by Conditional Access (error 53003), then the admin chooses *Reset password & revoke sessions*. Blocking a sign-in is not session revocation.
+- **Microsoft Intune · Compliance story**: encryption drifts, the ERP blocks the laptop, the employee fixes it in Company Portal, and access returns only after Intune verifies the next check-in.
+- **Microsoft Purview · Data protection story**: a Confidential file is emailed to an external partner, a DLP policy tip stops it, and an analyst resolves the alert. The rule covers the modeled email scenario only.
+
+Implementation: [story-episodes.js](story-episodes.js) (pure model), [story-screens.js](story-screens.js) (screens, visuals, endings), [story-ui.js](story-ui.js) (player), [story-screens.css](story-screens.css), routing in [app.js](app.js), and [tests/story-episodes.test.cjs](tests/story-episodes.test.cjs).
 
 Implementation: [defender-data.js](defender-data.js), the shared configurable [purview-modules-ui.js](purview-modules-ui.js) and [purview-modules.css](purview-modules.css), routing in [app.js](app.js), and [tests/defender-data.test.cjs](tests/defender-data.test.cjs). The shared renderer keeps Defender/Purview filters separate and uses the correct product name in details and exports. Browser checks cover every Defender module/detail/link, filtered export, time/unit/state/search filters, desktop/mobile light/dark layouts, and existing hunting/action/Purview regressions.
 

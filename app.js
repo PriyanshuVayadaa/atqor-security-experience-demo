@@ -140,10 +140,10 @@
   }
   const portalNames = { defender: 'Microsoft Defender', entra: 'Microsoft Entra admin center', intune: 'Microsoft Intune admin center', purview: 'Microsoft Purview' };
   const portalMenus = {
-    entra: [['Home','fa-house','tab:overview'],['Entra demo reel','fa-clapperboard','section:demo-reel'],['Favorites','fa-star','section:favorites'],['Entra ID','fa-fingerprint','heading'],['Overview','fa-circle-info','section:tenant',true],['Users','fa-user','tab:inventory',true],['Groups','fa-users','section:groups',true],['Devices','fa-laptop','section:devices',true],['Enterprise apps','fa-window-maximize','section:applications',true],['App registrations','fa-table-cells','section:app-registrations',true],['Roles & admins','fa-user-shield','section:roles',true],['Privileged Identity Management','fa-user-lock','section:pim'],['Identity Governance','fa-users-gear','section:governance'],['Conditional Access','fa-shield-halved','tab:controls'],['Multifactor authentication','fa-mobile-screen-button','section:mfa'],['Identity Secure Score','fa-chart-line','section:secure-score'],['Authentication methods','fa-key','section:authentication'],['Sign-in logs','fa-right-to-bracket','section:signin-logs'],['Risky users','fa-user-shield','section:risky-users'],['Risky sign-ins','fa-triangle-exclamation','section:signins'],['Access reviews','fa-user-check','section:access-reviews'],['Entitlement management','fa-box-open','section:entitlements'],['External Identities','fa-handshake','section:external'],['Named locations','fa-location-dot','section:locations'],['Entra Connect','fa-arrows-rotate','section:connect'],['Audit logs','fa-clock-rotate-left','section:audit']],
+    entra: [['Home','fa-house','tab:overview'],['Entra demo reel','fa-clapperboard','section:demo-reel'],['Sign-in story','fa-film','section:story'],['Favorites','fa-star','section:favorites'],['Entra ID','fa-fingerprint','heading'],['Overview','fa-circle-info','section:tenant',true],['Users','fa-user','tab:inventory',true],['Groups','fa-users','section:groups',true],['Devices','fa-laptop','section:devices',true],['Enterprise apps','fa-window-maximize','section:applications',true],['App registrations','fa-table-cells','section:app-registrations',true],['Roles & admins','fa-user-shield','section:roles',true],['Privileged Identity Management','fa-user-lock','section:pim'],['Identity Governance','fa-users-gear','section:governance'],['Conditional Access','fa-shield-halved','tab:controls'],['Multifactor authentication','fa-mobile-screen-button','section:mfa'],['Identity Secure Score','fa-chart-line','section:secure-score'],['Authentication methods','fa-key','section:authentication'],['Sign-in logs','fa-right-to-bracket','section:signin-logs'],['Risky users','fa-user-shield','section:risky-users'],['Risky sign-ins','fa-triangle-exclamation','section:signins'],['Access reviews','fa-user-check','section:access-reviews'],['Entitlement management','fa-box-open','section:entitlements'],['External Identities','fa-handshake','section:external'],['Named locations','fa-location-dot','section:locations'],['Entra Connect','fa-arrows-rotate','section:connect'],['Audit logs','fa-clock-rotate-left','section:audit']],
     defender: [['Home','fa-house','tab:overview'],['Attack response reel','fa-clapperboard','section:attack-reel'],...Object.entries(DefenderData.modules).map(([key,module])=>[module.title,module.icon,'section:'+key]),['Advanced hunting','fa-crosshairs','view:hunting'],['Cross-workload incidents','fa-layer-group','view:incidents'],['Action center','fa-list-check','view:actions'],['Capabilities & licensing','fa-book-open','tab:capabilities']],
-    intune: [['Home','fa-house','tab:overview'],['Device protection demo','fa-laptop','section:device-protection'],...Object.entries(IntuneData.modules).map(([key,module])=>[module.title,module.icon,'section:'+key])],
-    purview: [['Solutions','fa-table-cells-large','heading'],['Agent data protection','fa-robot','section:agent-protection'],...Object.entries(PurviewData.modules).map(([key,module])=>[module.title,module.icon,'section:'+key]),['Related portals','fa-arrow-up-right-from-square','heading'],['Microsoft Defender','fa-shield-halved','view:defender'],['Microsoft Entra','fa-fingerprint','view:entra'],['Microsoft Intune','fa-laptop','view:intune']]
+    intune: [['Home','fa-house','tab:overview'],['Device protection demo','fa-laptop','section:device-protection'],['Compliance story','fa-film','section:story'],...Object.entries(IntuneData.modules).map(([key,module])=>[module.title,module.icon,'section:'+key])],
+    purview: [['Solutions','fa-table-cells-large','heading'],['Agent data protection','fa-robot','section:agent-protection'],['Data protection story','fa-film','section:story'],...Object.entries(PurviewData.modules).map(([key,module])=>[module.title,module.icon,'section:'+key]),['Related portals','fa-arrow-up-right-from-square','heading'],['Microsoft Defender','fa-shield-halved','view:defender'],['Microsoft Entra','fa-fingerprint','view:entra'],['Microsoft Intune','fa-laptop','view:intune']]
   };
   function portalButton(label, glyph, target, nested = false) {
     if (target === 'heading') return `<div class="portal-nav-heading">${label}</div>`;
@@ -256,6 +256,7 @@
   }
   function portalSectionView(key) {
     const section = state.portalSection;
+    if (section === 'story' && StoryEpisodes.products[key]) { content.innerHTML = '<div id="story-root"></div>'; StoryUI.mount(content.querySelector('#story-root'), StoryEpisodes.products[key]); return; }
     if (key === 'defender' && section === 'attack-reel') { content.innerHTML='<div id="defender-attack-reel-root"></div>'; DefenderAttackReelUI.mount(content.querySelector('#defender-attack-reel-root')); return; }
     if (key === 'defender' && DefenderData.modules[section]) { defenderModuleView(section); return; }
     if (key === 'intune' && section === 'device-protection') { content.innerHTML = '<div id="intune-device-root"></div>'; IntuneDeviceDemoUI.mount(content.querySelector('#intune-device-root')); return; }
@@ -397,6 +398,7 @@
   }
   function render() {
     EntraReelUI.unmount();
+    StoryUI.unmount();
     DefenderAttackReelUI.unmount();
     PurviewAgentDemoUI.unmount();
     IntuneDeviceDemoUI.unmount();
@@ -449,6 +451,14 @@
       home.insertAdjacentHTML('afterbegin',`<section class="pv-home-fixtures"><div><strong>Explore the Defender sample environment</strong><span>${Object.keys(DefenderData.modules).length} populated modules · ${total} linked records · fictional Nov 2 snapshot</span></div><button class="button" data-portal-target="section:defender-incidents">Review Defender cases ${icon('fa-arrow-right')}</button></section>`);
       home.insertAdjacentHTML('beforeend',`<div class="section-heading"><h2>Explore Defender modules</h2><span class="license-note">Populated, inspectable sample evidence</span></div><div class="entra-module-grid">${Object.entries(DefenderData.modules).map(([key,module])=>`<button class="portal-card entra-module-card" data-portal-target="section:${key}">${icon(module.icon)}<strong>${module.title}</strong><small>${module.rows.length} curated records ${icon('fa-arrow-right')}</small></button>`).join('')}</div>`);
     }
+    storyLaunch();
+  }
+  function storyLaunch() {
+    const cards = { entra: ['What happens when someone else has Sarah’s password?', 'Follow the sign-in, the risk detection, the block, and the admin response on realistic screens.'], intune: ['What happens when a laptop falls out of compliance?', 'Watch access get blocked, the user fix their own device, and Intune verify it before access returns.'], purview: ['What happens when a Confidential file is about to leave?', 'See the label, the policy tip, the DLP alert and the analyst’s response, step by step.'] };
+    const card = cards[state.view];
+    if (!card || !StoryEpisodes.products[state.view] || state.tab !== 'overview' || state.portalSection) return;
+    const home = content.querySelector('.portal-home');
+    if (home) home.insertAdjacentHTML('afterbegin', `<section class="st-launch"><span>${icon('fa-film')}</span><div><small>NEW · INTERACTIVE STORY</small><h2>${card[0]}</h2><p>${card[1]}</p></div><button data-portal-target="section:story">${icon('fa-play')} Watch the story</button></section>`);
   }
   function navigate(view, replace = false) {
     if (!titles[view] && !data.products[view]) view = 'overview';
