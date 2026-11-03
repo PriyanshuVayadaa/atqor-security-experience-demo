@@ -60,7 +60,7 @@ const DefenderAttackReelUI=(()=>{
     warning:c=>desktop(c,browser('prompt')),
     prevented:c=>desktop(c,browser('deleted')+toast('fa-flag','Mail','Reported to security','Sarah reported the message. No alert was needed.','ok')),
     endpoint:c=>desktop(c,explorer()+toast('fa-shield-halved','Windows Security','Suspicious activity detected','Unusual behavior was found on this device. Your security team has been notified.','warn','dar-alert')+'<div class="dar-flash"></div>'),
-    incident:()=>portal(incidentPage(false)),
+    incident:()=>portal(incidentPage(false))+toast('fa-bell','Microsoft Defender','New high-severity incident','SIM-DEF-001 · Suspicious file activity on FIN-LT-042 needs an analyst.','warn','dar-alert dar-ptoast')+'<div class="dar-flash"></div>',
     decision:()=>portal(incidentPage(true)),
     isolation:()=>portal(devicePage(true)),
     verified:()=>portal(wrapUp()),
