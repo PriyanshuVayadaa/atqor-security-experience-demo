@@ -4,9 +4,9 @@ const assert = require('node:assert/strict');
 const Episodes = require('../story-episodes.js');
 const Screens = require('../story-screens.js');
 
-const ids = ['entra', 'intune', 'purview'];
-const gates = { entra: 'contain', intune: 'fix', purview: 'send' };
-const steps = { entra: 3, intune: 3, purview: 2 };
+const ids = ['entra', 'intune', 'purview', 'agent365'];
+const gates = { entra: 'contain', intune: 'fix', purview: 'send', agent365: 'block' };
+const steps = { entra: 3, intune: 3, purview: 2, agent365: 3 };
 
 function walk(id) {
   const player = Episodes.createPlayer(id);

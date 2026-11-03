@@ -186,3 +186,4 @@ body.dark .a365-scroll{background:linear-gradient(180deg,#fff0 0,var(--a-bg) 270
 .a365-rate{display:flex;gap:8px;margin-bottom:12px;}.a365-rate button{padding:8px 12px;border:1px solid var(--a-line);border-radius:6px;background:var(--a-surface);}.a365-rate button.on{border-color:var(--a-brand);background:var(--a-soft);}
 .a365-field textarea{padding:8px;border:1px solid var(--a-line);border-radius:4px;background:var(--a-surface);color:var(--a-text);font:inherit;resize:vertical;}
 .a365-reduce *,.a365-reduce *:before,.a365-reduce *:after{animation:none!important;transition:none!important;}
+.a365-storycard{grid-column:1/-1;padding:0;border:0;background:none;box-shadow:none;}.a365-storycard .st-launch{margin:0;}
