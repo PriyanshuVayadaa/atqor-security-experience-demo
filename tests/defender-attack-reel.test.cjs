@@ -41,14 +41,22 @@ test('back, replay and branch changes discard stale response decisions',()=>{
   const player=reel.createPlayer();advanceTo(player,'warning');player.choose('continue');advanceTo(player,'decision');player.choose('isolate');
   player.back();assert.equal(player.scene().id,'decision');assert.equal(player.snapshot().responseChoice,null);
   player.choose('investigate');assert.equal(player.scene().id,'investigation');
-  player.back();player.back();player.back();player.back();
+  player.back();player.back();player.back();player.back();player.back();player.back();
   assert.equal(player.scene().id,'warning');assert.equal(player.snapshot().downloadChoice,null);
   player.choose('cancel');assert.equal(player.scene().id,'prevented');player.replay();
   assert.deepEqual(player.snapshot(),{step:0,downloadChoice:null,responseChoice:null});
 });
+test('analyst investigates and a playbook prepares response before approval is requested',()=>{
+  const player=reel.createPlayer();advanceTo(player,'warning');player.choose('continue');advanceTo(player,'triage');
+  assert.match(player.scene().facts.find(([k])=>k==='Automated investigation')[1],/simulated/);
+  player.next();assert.equal(player.scene().id,'playbook');
+  assert.match(player.scene().facts.find(([k])=>k==='Pending step')[1],/analyst approval/);
+  assert.match(player.scene().why,/approval step/);
+  player.next();assert.equal(player.scene().id,'decision');assert.throws(()=>player.next(),/Choose a response/);
+});
 test('timeline is chronological, bounded to the active branch, and keeps story states local',()=>{
   const player=reel.createPlayer();advanceTo(player,'warning');player.choose('continue');advanceTo(player,'decision');player.choose('isolate');player.next();
-  const events=reel.timeline(player.snapshot());assert.equal(events.length,8);
+  const events=reel.timeline(player.snapshot());assert.equal(events.length,10);
   for(let i=1;i<events.length;i++)assert.ok(events[i].time>events[i-1].time);
   const saved=player.snapshot();saved.step=0;assert.equal(player.scene().id,'verified');
   player.next();assert.equal(player.scene().id,'verified');
