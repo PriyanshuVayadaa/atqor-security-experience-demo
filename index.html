@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="demo-polish.css?v=1">
   <link rel="stylesheet" href="defender-attack-reel.css?v=8">
   <link rel="stylesheet" href="story-screens.css?v=3">
+  <link rel="stylesheet" href="agent365.css?v=3">
   <script defer src="assets/chart.umd.min.js"></script>
   <script defer src="data.js?v=3"></script>
   <script defer src="entra-ca-demo.js?v=1"></script>
@@ -38,7 +39,10 @@
   <script defer src="story-screens.js?v=1"></script>
   <script defer src="story-ui.js?v=2"></script>
   <script defer src="intune-data.js?v=1"></script>
-  <script defer src="app.js?v=14"></script>
+  <script defer src="agent365-data.js?v=1"></script>
+  <script defer src="agent365.js?v=3"></script>
+  <script defer src="agent365-ui.js?v=3"></script>
+  <script defer src="app.js?v=15"></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -47,7 +51,7 @@
     <form class="global-search" id="search-form" role="search"><i class="fa-solid fa-magnifying-glass"></i><input id="global-search" aria-label="Search incidents, devices, identities, or capabilities" placeholder="Search across your security environment" autocomplete="off"><kbd>/</kbd></form>
     <div class="top-actions"><span class="top-tenant">Contoso <span>contoso.onmicrosoft.com</span></span><span class="demo-chip"><span></span> SAMPLE TENANT</span><button class="icon-button" id="theme-toggle" title="Switch theme" aria-label="Switch theme"><i class="fa-regular fa-moon"></i></button><button class="icon-button notification-button" id="notifications" title="Open priority alerts" aria-label="Open priority alerts"><i class="fa-regular fa-bell"></i><span></span></button><button class="avatar" id="account" title="Tenant information" aria-label="Tenant information">AV</button></div>
   </header>
-  <div id="workspace-picker" class="workspace-picker" hidden><div class="picker-heading"><strong>Security workspaces</strong><span>atQor experience center &middot; Demo</span></div><div class="workspace-options"><button data-view="overview"><i class="fa-solid fa-house"></i><span>Unified security overview<small>Cross-workload operations</small></span></button><button data-view="defender"><i class="fa-solid fa-shield-halved"></i><span>Microsoft Defender<small>Threat protection and response</small></span></button><button data-view="intune"><i class="fa-solid fa-laptop"></i><span>Microsoft Intune admin center<small>Endpoint management</small></span></button><button data-view="entra"><i class="fa-solid fa-fingerprint"></i><span>Microsoft Entra admin center<small>Identity and access</small></span></button><button data-view="purview"><i class="fa-solid fa-eye"></i><span>Microsoft Purview<small>Data security and governance</small></span></button><button data-view="copilot"><i class="fa-solid fa-wand-magic-sparkles"></i><span>Microsoft Security Copilot<small>Scripted investigation workspace</small></span></button></div></div>
+  <div id="workspace-picker" class="workspace-picker" hidden><div class="picker-heading"><strong>Security workspaces</strong><span>atQor experience center &middot; Demo</span></div><div class="workspace-options"><button data-view="overview"><i class="fa-solid fa-house"></i><span>Unified security overview<small>Cross-workload operations</small></span></button><button data-view="defender"><i class="fa-solid fa-shield-halved"></i><span>Microsoft Defender<small>Threat protection and response</small></span></button><button data-view="intune"><i class="fa-solid fa-laptop"></i><span>Microsoft Intune admin center<small>Endpoint management</small></span></button><button data-view="entra"><i class="fa-solid fa-fingerprint"></i><span>Microsoft Entra admin center<small>Identity and access</small></span></button><button data-view="purview"><i class="fa-solid fa-eye"></i><span>Microsoft Purview<small>Data security and governance</small></span></button><button data-view="copilot"><i class="fa-solid fa-wand-magic-sparkles"></i><span>Microsoft Security Copilot<small>Scripted investigation workspace</small></span></button><button data-view="agent365"><i class="fa-solid fa-robot"></i><span>Agent 365<small>Agent registry and governance</small></span></button></div></div>
   <nav id="product-rail" class="product-rail" aria-label="Product shortcuts" hidden></nav>
   <aside class="sidebar" id="sidebar">
     <button class="tenant-switch" id="tenant-button"><span class="tenant-icon"><i class="fa-solid fa-shield-halved"></i></span><span><strong>Contoso</strong><small>Security operations &middot; Demo</small></span><i class="fa-solid fa-chevron-down"></i></button>
@@ -63,6 +67,7 @@
       <button class="nav-item" data-view="entra"><i class="fa-solid fa-fingerprint product-entra"></i><span>Microsoft Entra</span></button>
       <button class="nav-item" data-view="purview"><i class="fa-solid fa-eye product-purview"></i><span>Microsoft Purview</span></button>
       <button class="nav-item" data-view="copilot"><i class="fa-solid fa-wand-magic-sparkles product-copilot"></i><span>Security Copilot</span><span class="new-label">AI</span></button>
+      <button class="nav-item" data-view="agent365"><i class="fa-solid fa-robot product-agent365"></i><span>Agent 365</span><span class="new-label">NEW</span></button>
       <div id="product-navigation"></div>
       <div class="nav-divider"></div>
       <button class="nav-item" data-view="reports"><i class="fa-regular fa-chart-bar"></i><span>Reports & insights</span></button>

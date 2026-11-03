@@ -24,7 +24,7 @@
   const panelTitle = (title, subtitle = '', right = '') => `<div class="panel-heading"><div><h2>${title}</h2>${subtitle ? `<p>${subtitle}</p>` : ''}</div>${right}</div>`;
   const linkButton = (text, view) => `<button class="text-button" data-view="${view}">${text} ${icon('fa-arrow-right')}</button>`;
   const tag = type => `<span class="license-tag ${type === 'License-dependent' ? 'dependent' : type === 'Integrated' ? 'integrated' : ''}">${type}</span>`;
-  const titles = { overview: ['Security overview', 'Contoso | Security posture and cross-workload operations', ''], incidents: ['Incidents & alerts', 'Cross-workload investigation queue | Contoso', ''], hunting: ['Advanced hunting', 'Explore supported hunting templates against the local sample dataset.', ''], actions: ['Action center', 'Review pending response recommendations and recorded sample actions.', ''], reports: ['Reports & insights', 'Security trends and operational metrics from the sample environment.', ''], licenses: ['Licensing & integrations', 'Product capabilities, entitlement boundaries, and supported integration paths.', ''], copilot: ['Microsoft Security Copilot', 'Investigation workspace | Local scripted assistant', ''], search: ['Search results', 'Results from the local demonstration dataset.', ''] };
+  const titles = { agent365: ['Agent 365', 'Registry, observability and governance for AI agents | Contoso', ''], overview: ['Security overview', 'Contoso | Security posture and cross-workload operations', ''], incidents: ['Incidents & alerts', 'Cross-workload investigation queue | Contoso', ''], hunting: ['Advanced hunting', 'Explore supported hunting templates against the local sample dataset.', ''], actions: ['Action center', 'Review pending response recommendations and recorded sample actions.', ''], reports: ['Reports & insights', 'Security trends and operational metrics from the sample environment.', ''], licenses: ['Licensing & integrations', 'Product capabilities, entitlement boundaries, and supported integration paths.', ''], copilot: ['Microsoft Security Copilot', 'Investigation workspace | Local scripted assistant', ''], search: ['Search results', 'Results from the local demonstration dataset.', ''] };
 
   function destroyCharts() { state.charts.forEach(chart => chart.destroy()); state.charts = []; }
   function chart(id, config) {
@@ -399,11 +399,13 @@
   function render() {
     EntraReelUI.unmount();
     StoryUI.unmount();
+    Agent365UI.unmount();
     DefenderAttackReelUI.unmount();
     PurviewAgentDemoUI.unmount();
     IntuneDeviceDemoUI.unmount();
     document.body.classList.toggle('entra-reel-active', state.view === 'entra' && state.portalSection === 'demo-reel');
     document.body.classList.toggle('defender-reel-active', state.view === 'defender' && state.portalSection === 'attack-reel');
+    document.body.classList.toggle('a365-active', state.view === 'agent365');
     destroyCharts();
     const product = data.products[state.view];
     const portalKey = product ? state.view : ['incidents','hunting','actions','reports'].includes(state.view) ? state.portalContext : null;
@@ -417,7 +419,7 @@
     document.querySelector('#page-subtitle').textContent = title[1];
     document.querySelector('#page-eyebrow').textContent = title[2];
     document.querySelector('#breadcrumb-current').textContent = state.view === 'overview' ? 'Overview' : title[0];
-    document.querySelector('#brand-product').textContent = portalNames[portalKey] || (state.view === 'copilot' ? 'Microsoft Security Copilot' : 'Security experience center');
+    document.querySelector('#brand-product').textContent = portalNames[portalKey] || (state.view === 'agent365' ? 'Microsoft 365 admin center' : state.view === 'copilot' ? 'Microsoft Security Copilot' : 'Security experience center');
     document.title = `${title[0]} | atQor - Sample environment`;
     document.querySelectorAll('#navigation [data-view]').forEach(button => { button.classList.toggle('active', button.dataset.view === state.view); if (button.dataset.view === state.view) button.setAttribute('aria-current','page'); else button.removeAttribute('aria-current'); });
     const contextual = document.querySelector('#product-navigation');
@@ -425,7 +427,7 @@
     if (product) document.querySelector(`#navigation [data-view="${state.view}"]`).after(contextual);
     document.querySelector('.nav-count').textContent = activeCount();
     if (product) productView(state.view);
-    else ({ overview, incidents: incidentView, hunting: huntingView, actions: actionsView, reports, licenses: licensing, copilot, search: () => searchView(document.querySelector('#global-search').value.trim()) }[state.view] || overview)();
+    else ({ overview, incidents: incidentView, hunting: huntingView, actions: actionsView, reports, licenses: licensing, copilot, agent365: () => { content.innerHTML = '<div id="a365-host"></div>'; Agent365UI.mount(content.querySelector('#a365-host')); }, search: () => searchView(document.querySelector('#global-search').value.trim()) }[state.view] || overview)();
     if (state.view === 'purview' && state.tab === 'overview' && !state.portalSection) {
       const home=content.querySelector('.purview-home');
       home.insertAdjacentHTML('afterbegin', `<section class="pa-launch">${icon('fa-robot')}<div><h2>What happens when someone sends PII to an agent?</h2><p>Try the protected chatbot. Attach a synthetic document, send a message, and see the policy block inside the conversation.</p></div><button data-portal-target="section:agent-protection">${icon('fa-comment-dots')} Open protected chatbot</button></section>`);
@@ -454,6 +456,10 @@
     storyLaunch();
   }
   function storyLaunch() {
+    if (state.view === 'overview' && state.dashboardTab === 'overview') {
+      content.insertAdjacentHTML('afterbegin', `<section class="st-launch"><span>${icon('fa-robot')}</span><div><small>NEW \u00b7 AGENT 365</small><h2>Who is watching your AI agents?</h2><p>Explore an Agent 365 registry: every agent, its owner, risk signals and the controls an admin can apply.</p></div><button data-view="agent365">${icon('fa-play')} Open Agent 365</button></section>`);
+      return;
+    }
     const cards = { entra: ['What happens when someone else has Sarah’s password?', 'Follow the sign-in, the risk detection, the block, and the admin response on realistic screens.'], intune: ['What happens when a laptop falls out of compliance?', 'Watch access get blocked, the user fix their own device, and Intune verify it before access returns.'], purview: ['What happens when a Confidential file is about to leave?', 'See the label, the policy tip, the DLP alert and the analyst’s response, step by step.'] };
     const card = cards[state.view];
     if (!card || !StoryEpisodes.products[state.view] || state.tab !== 'overview' || state.portalSection) return;
