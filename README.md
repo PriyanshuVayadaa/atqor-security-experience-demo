@@ -88,7 +88,7 @@ At the warning, the audience can **stop and report** or **continue with the fict
 
 Controls include previous/next, play/pause, replay, scene pace, evidence details, keyboard/Escape behavior, and responsive presentation. Browser reputation, Defender for Endpoint, Defender XDR, and analyst actions are shown as separate capabilities with configuration/licensing caveats. A warning is not guaranteed for every file; endpoint detection and incident correlation depend on supported products, sensor coverage, configuration and available telemetry. Isolation is not malware removal or verified recovery. This is a fixed local narrative, not a sensor demo or connected tenant workflow; no actual download, execution, API request, isolation, removal, or tenant response occurs.
 
-Implementation: [defender-attack-reel.js](defender-attack-reel.js), [defender-attack-reel-ui.js](defender-attack-reel-ui.js), [defender-attack-reel.css](defender-attack-reel.css), routing in [app.js](app.js), and [tests/defender-attack-reel.test.cjs](tests/defender-attack-reel.test.cjs). The full suite contains **141 passing tests**. Browser checks cover both employee and analyst branches, the in-screen choices, evidence drawer, keyboard exit, and desktop full-screen geometry.
+Implementation: [defender-attack-reel.js](defender-attack-reel.js), [defender-attack-reel-ui.js](defender-attack-reel-ui.js), [defender-attack-reel.css](defender-attack-reel.css), routing in [app.js](app.js), and [tests/defender-attack-reel.test.cjs](tests/defender-attack-reel.test.cjs). The full suite contains **143 passing tests**. Browser checks cover both employee and analyst branches, the in-screen choices, evidence drawer, keyboard exit, and desktop full-screen geometry.
 
 ### Product stories: Entra, Intune and Purview
 
@@ -105,7 +105,9 @@ Implementation: [story-episodes.js](story-episodes.js) (pure model), [story-scre
 Open **Agent 365** from the sidebar, the workspace picker, or the Home card. It replicates the Agents experience of the Microsoft 365 admin center as a separate, desktop-only module with fictional Contoso data and no tenant connection.
 
 - **Overview:** registry, active users, run-time and registry-sync metrics; "Top actions for you" (pending requests, agents at risk, without owners, with exceptions) that open a pre-filtered registry; agents by creator, top platforms, active users over time, trending agents.
-- **All agents:** Registry (summary tiles, search, status/publisher/channel/platform/data-source filters, sortable columns, customize view, compact list, CSV export of the filtered list, Add agent wizard, Manage pinned agents), Requests (approve or reject) and Map (clusters by platform, risk and ownership markers, plus a single agent map for agents that report observability data).
+- **All agents:** Registry (summary tiles, search, status/publisher/channel/platform/data-source filters, sortable columns, customize view, compact list, CSV export of the filtered list, Add agent wizard, Manage pinned agents) and Requests (approve or reject).
+- **Agent map:** bubble clusters by platform (Microsoft, Third party, Copilot Studio, Agent Builder, Foundry and more) sized by agent count with risk badges. Select a cluster to open its agents, filter from the floating Filters panel, pan, zoom, fit, full screen, export, and set max agents per cluster. Agents that report observability data open a single agent map of top users and tools.
+- **Deleted agents:** agents deleted or removed in the session, with Restore.
 - **Agent details pane:** Details, Users, Data and tools, Security and Activity tabs, state-based actions (block, unblock, assign owner, delete or remove, install, pin) and a Risk details pane grouped by severity and source.
 - **Settings:** policy templates, governance rules, registry sync and a local admin activity log.
 - A role switch shows that a Global Reader can view but not act. Actions are recorded locally only and never change a tenant.

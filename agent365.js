@@ -8,6 +8,7 @@ const Agent365 = (() => {
   const clone = value => JSON.parse(JSON.stringify(value));
   const riskCount = agent => agent.risks.reduce((total, item) => total + item.occ, 0);
   const sevRank = { High: 3, Medium: 2, Low: 1 };
+  const clusterOf = agent => agent.publisher === 'Microsoft' ? 'Microsoft' : agent.publisher === 'Third party' && agent.platform === 'Other' ? 'Third party' : agent.platform === 'Microsoft Foundry' ? 'Foundry' : agent.platform === 'Other' ? 'Others' : agent.platform;
 
   function createStore() {
     let agents = clone(Data.agents);
@@ -140,7 +141,7 @@ const Agent365 = (() => {
 
     function map(filters = {}) {
       const groups = {};
-      list(filters).forEach(agent => { (groups[agent.platform] = groups[agent.platform] || []).push(agent); });
+      list(filters).forEach(agent => { (groups[clusterOf(agent)] = groups[clusterOf(agent)] || []).push(agent); });
       return Object.entries(groups).map(([name, items]) => ({ name, agents: items })).sort((x, y) => y.agents.length - x.agents.length || x.name.localeCompare(y.name));
     }
 
@@ -166,16 +167,25 @@ const Agent365 = (() => {
       return clone(agent);
     }
 
+    function restore(id) {
+      const agent = agents.find(item => item.id === id && item.removed);
+      if (!agent) throw new Error('This agent is not in the deleted list');
+      delete agent.removed;
+      record(agent, 'Restored', 'Back in the registry. Pins and previous deployments are not restored.');
+      return clone(agent);
+    }
+
     const toggleRule = id => { const rule = rules.find(item => item.id === id); if (!rule) throw new Error('Unknown rule'); rule.enabled = !rule.enabled; return clone(rule); };
 
     return {
-      get: id => clone(find(id)), list, summary, facets, overview, map, singleMap, exportCsv, actionsFor, act, movePin, decide, addAgent, toggleRule,
+      get: id => clone(find(id)), list, summary, facets, overview, map, singleMap, exportCsv, actionsFor, act, movePin, decide, addAgent, restore, toggleRule,
+      deleted: () => agents.filter(agent => agent.removed).map(clone),
       requests: () => clone(requests).map(item => ({ ...item, agentName: find(item.agentId).name })),
       pinned: () => pinnedList().map(clone), rules: () => clone(rules), log: () => clone(log), canPinMore: () => pinnedList().length < MAX_PINNED
     };
   }
 
-  return { createStore, riskCount, PUBLISHER_LABEL, MAX_PINNED, sevRank, platformsConnected: Data.connectedPlatforms, templates: Data.policyTemplates, admin: Data.admin };
+  return { createStore, riskCount, clusterOf, PUBLISHER_LABEL, MAX_PINNED, sevRank, platformsConnected: Data.connectedPlatforms, templates: Data.policyTemplates, admin: Data.admin };
 })();
 
 if (typeof module !== 'undefined') module.exports = Agent365;

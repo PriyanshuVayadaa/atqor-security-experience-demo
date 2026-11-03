@@ -16,8 +16,8 @@ const Agent365UI = (() => {
   const CARD_FILTERS = { risk: { risk: 'at-risk' }, ownerless: { ownerless: true }, unmanaged: { unmanaged: true }, errors: { errors: true } };
   const WRITE_NOTE = 'Requires the AI Administrator or Global Administrator role';
 
-  let root = null, store = null, st = null, toastTimer = null;
-  const fresh = () => ({ page: 'overview', tab: 'registry', filters: {}, card: '', sort: { key: 'name', dir: 'asc' }, cols: { status: 1, publisher: 1, platform: 1, owner: 1, channels: 0, risks: 1, version: 0, modified: 1 }, compact: false, panel: null, selected: null, paneTab: 'details', openRisk: 'High', single: null, mapNode: null, role: 'ai-admin', dialog: null, wizard: { step: 0, uploaded: false, publish: 'Everyone in the organization', deploy: 'No one yet', template: 'Standard protection' }, toast: '' });
+  let root = null, store = null, st = null, toastTimer = null, popNow = false, showLoader = false, drag = null;
+  const fresh = () => ({ page: 'overview', tab: 'registry', filters: {}, card: '', sort: { key: 'name', dir: 'asc' }, cols: { status: 1, publisher: 1, platform: 1, owner: 1, channels: 0, risks: 1, version: 0, modified: 1 }, compact: false, panel: null, selected: null, paneTab: 'details', openRisk: 'High', single: null, mapNode: null, cluster: null, zoom: 1, pan: [0, 0], mapFilters: false, mapFull: false, pop: null, maxPer: 12, mapLoad: false, anim: false, role: 'ai-admin', dialog: null, wizard: { step: 0, uploaded: false, publish: 'Everyone in the organization', deploy: 'No one yet', template: 'Standard protection' }, toast: '' });
   const can = () => st.role === 'ai-admin';
 
   const statusBadge = status => `<span class="a365-status ${status.toLowerCase().replace(/\s+/g, '-')}"><i></i>${esc(status)}</span>`;
@@ -40,14 +40,16 @@ const Agent365UI = (() => {
     const s = store.summary();
     return `<nav class="a365-nav" aria-label="Agents navigation"><div class="a365-nav-head">${icon('fa-grip')}<strong>Microsoft 365 admin center</strong></div>
       <div class="a365-nav-group">Agents</div>
-      ${item('overview', 'fa-gauge-high', 'Overview')}${item('registry', 'fa-robot', 'All agents', s.pending ? `<em>${s.pending}</em>` : '')}${item('settings', 'fa-sliders', 'Settings')}
+      ${item('overview', 'fa-gauge-high', 'Overview')}${item('registry', 'fa-robot', 'All agents', s.pending ? `<em>${s.pending}</em>` : '')}${item('map', 'fa-circle-nodes', 'Agent map')}${item('deleted', 'fa-trash-can', 'Deleted agents', store.deleted().length ? `<em>${store.deleted().length}</em>` : '')}${item('settings', 'fa-sliders', 'Settings')}
       <div class="a365-nav-note">Agent 365 gives IT a registry, observability and policy controls for every agent. All data here is fictional.</div>
       <button class="a365-nav-item a365-back" data-view="overview">${icon('fa-arrow-left')}<span>atQor security overview</span></button></nav>`;
   }
   function headerHtml() {
-    const titles = { overview: ['Agents', 'Overview'], registry: ['Agents', 'All agents'], settings: ['Agents', 'Settings'] };
-    const [parent, current] = titles[st.page];
-    return `<header class="a365-header"><div><div class="a365-crumbs"><span>${parent}</span>${icon('fa-chevron-right')}<span>${current}</span></div><h1>${st.page === 'overview' ? 'Agent overview' : st.page === 'registry' ? 'All agents' : 'Agent settings'}</h1></div>
+    const names = { overview: ['Agents', 'Overview', 'Agent overview'], registry: ['Agents', 'All agents', 'All agents'], deleted: ['Agents', 'Deleted agents', 'Deleted agents'], settings: ['Agents', 'Settings', 'Agent settings'], map: ['Home', 'Agent map', 'Agent map'] };
+    const [parent, current, heading] = names[st.page];
+    const badge = st.page === 'map' ? `<span class="a365-chip">${icon('fa-robot')} Agent 365</span>` : '';
+    const lede = st.page === 'map' ? '<p class="a365-maplede">Visualize how agents are distributed across platforms. Explore connections, filter by status, and zoom into specific clusters to understand your agent ecosystem.</p>' : '';
+    return `<header class="a365-header"><div><div class="a365-crumbs"><span>${parent}</span>${icon('fa-chevron-right')}<span>${current}</span></div><h1>${heading}${badge}</h1>${lede}</div>
       <div class="a365-who"><label class="a365-role">Viewing as<select data-a365-role aria-label="Administrator role"><option value="ai-admin" ${can() ? 'selected' : ''}>Priya Shah · AI Administrator</option><option value="reader" ${can() ? '' : 'selected'}>Global Reader (view only)</option></select></label><span class="a365-sim">${icon('fa-flask')} Sample data · no tenant connection</span></div></header>`;
   }
 
@@ -100,12 +102,71 @@ const Agent365UI = (() => {
     if (!list.length) return `<div class="a365-empty">${icon('fa-circle-check')}<strong>No pending requests</strong><span>Creators’ requests to publish agents widely appear here for approval.</span></div>`;
     return `<div class="a365-tablewrap"><table class="a365-table"><thead><tr><th>Agent</th><th>Requested by</th><th>Requested on</th><th>Audience</th><th>Note</th><th>Decision</th></tr></thead><tbody>${list.map(item => `<tr><td><button class="a365-name" data-a365-open="${item.agentId}"><b>${esc(item.agentName)}</b></button></td><td>${esc(item.requestedBy)}</td><td>${dateText(item.date)}</td><td>${esc(item.scope)}</td><td>${esc(item.note)}</td><td class="a365-rowactions"><button class="a365-btn primary" data-a365-decide="approve" data-id="${item.id}" ${can() ? '' : `disabled title="${WRITE_NOTE}"`}>Approve</button><button class="a365-btn" data-a365-decide="reject" data-id="${item.id}" ${can() ? '' : `disabled title="${WRITE_NOTE}"`}>Reject</button></td></tr>`).join('')}</tbody></table></div><p class="a365-count">Approving publishes the agent to the requested audience. Rejecting leaves it with its creator.</p>`;
   }
-  function mapHtml() {
-    if (st.single) return singleMapHtml();
-    const clusters = store.map(st.filters);
-    if (!clusters.length) return `<div class="a365-empty">${icon('fa-filter-circle-xmark')}<strong>No agents match these filters</strong></div>`;
-    return `<div class="a365-maplegend"><span><i class="dot high"></i>High risk signal</span><span><i class="dot medium"></i>Medium</span><span><i class="dot low"></i>Low</span><span><i class="dot dashed"></i>No owner</span><span><i class="dot blocked"></i>Blocked</span><span><i class="dot ring"></i>Observability data</span></div>
-      <div class="a365-map">${clusters.map(group => `<article class="a365-cluster"><h3>${esc(group.name)}<b>${group.agents.length}</b></h3><div class="a365-nodes">${group.agents.map(agent => `<button class="a365-node ${pubClass[agent.publisher]} ${sevOf(agent).toLowerCase()} ${agent.owner ? '' : 'noowner'} ${agent.status === 'Blocked' ? 'blocked' : ''} ${agent.sdk ? 'sdk' : ''}" data-a365-open="${agent.id}" title="${esc(agent.name)}" aria-label="${esc(agent.name)}, ${esc(agent.status)}${sevOf(agent) ? ', ' + sevOf(agent) + ' risk signal' : ''}">${esc(initials(agent.name))}</button>`).join('')}</div></article>`).join('')}</div>`;
+  /* ---------- agent map (bubble clusters) ---------- */
+  const CLUSTER_STYLE = { Microsoft: ['#0f6cbd', 'fa-table-cells-large'], 'Third party': ['#8764b8', 'fa-puzzle-piece'], 'Copilot Studio': ['#d9822b', 'fa-wand-magic-sparkles'], 'Copilot Studio Legacy': ['#8a5a9e', 'fa-comments'], 'Agent Builder': ['#a855d9', 'fa-hammer'], Foundry: ['#1d6fe0', 'fa-cube'], SharePoint: ['#13a3b4', 'fa-share-nodes'], 'Agents Toolkit': ['#7fa21e', 'fa-toolbox'], 'Amazon Bedrock': ['#e07b1a', 'fa-cloud'], 'Google Vertex AI': ['#2a8f5a', 'fa-diagram-project'], Others: ['#e0527a', 'fa-shapes'] };
+  const clusterStyle = name => CLUSTER_STYLE[name] || ['#616161', 'fa-robot'];
+  function pack(items, pad = 32, squash = .8) {
+    const placed = [];
+    items.forEach((item, index) => {
+      if (!index) { placed.push({ ...item, x: 0, y: 0 }); return; }
+      let angle = index * 2.4, dist = item.r + placed[0].r + pad;
+      for (let tries = 0; tries < 3000; tries += 1) {
+        const x = Math.cos(angle) * dist, y = Math.sin(angle) * dist * squash;
+        if (placed.every(other => Math.hypot(other.x - x, other.y - y) >= other.r + item.r + pad)) { placed.push({ ...item, x, y }); return; }
+        angle += .3; dist += .9;
+      }
+      placed.push({ ...item, x: 0, y: 0 });
+    });
+    return placed;
+  }
+  const place = (item, extra = '') => `left:${item.x.toFixed(1)}px;top:${item.y.toFixed(1)}px;width:${item.r * 2}px;height:${item.r * 2}px;margin:${-item.r}px 0 0 ${-item.r}px;${extra}`;
+  function mapWorld() {
+    const groups = store.map(st.filters);
+    if (!groups.length) return { html: '', note: '', count: 0, groups: 0 };
+    if (st.cluster && !groups.some(group => group.name === st.cluster)) st.cluster = null;
+    const pop = popNow ? ' pop' : '';
+    if (st.cluster) {
+      const group = groups.find(item => item.name === st.cluster), [color] = clusterStyle(group.name);
+      const sorted = [...group.agents].sort((x, y) => Agent365.riskCount(y) - Agent365.riskCount(x) || x.name.localeCompare(y.name)).slice(0, st.maxPer);
+      const placed = pack(sorted.map(agent => ({ agent, r: 38 })), 62, .72);
+      const html = placed.map((item, index) => { const agent = item.agent, sev = sevOf(agent).toLowerCase(); return `<button class="a365-abub ${pubClass[agent.publisher]} ${sev} ${agent.owner ? '' : 'noowner'} ${agent.status === 'Blocked' ? 'blocked' : ''} ${agent.sdk ? 'sdk' : ''}${pop}" style="${place(item, `animation-delay:${index * 35}ms`)}" data-a365-open="${agent.id}" aria-label="${esc(agent.name)}, ${esc(agent.status)}${sev ? ', ' + sev + ' risk signal' : ''}${agent.owner ? '' : ', no owner'}">${esc(initials(agent.name))}<span class="a365-bl">${esc(agent.name.length > 22 ? agent.name.slice(0, 21) + '…' : agent.name)}</span></button>`; }).join('');
+      return { html, color, count: group.agents.length, groups: groups.length, note: group.agents.length > sorted.length ? `Showing ${sorted.length} of ${group.agents.length}. Raise “Max agents per cluster” in settings to see more.` : '' };
+    }
+    const placed = pack(groups.map(group => ({ group, r: Math.round(40 + Math.sqrt(group.agents.length) * 15) })), 36);
+    const html = placed.map((item, index) => { const group = item.group, [color, glyph] = clusterStyle(group.name), risky = group.agents.filter(agent => Agent365.riskCount(agent)).length; return `<button class="a365-bub${pop}" style="${place(item, `--c:${color};animation-delay:${index * 45}ms`)}" data-a365-cluster="${esc(group.name)}" aria-label="${esc(group.name)}, ${group.agents.length} ${group.agents.length === 1 ? 'agent' : 'agents'}${risky ? `, ${risky} with risk signals` : ''}. Open cluster"><i class="fa-solid ${glyph}" style="font-size:${Math.round(item.r * .62)}px" aria-hidden="true"></i>${risky ? `<em class="a365-rb" title="${risky} with risk signals">${risky}</em>` : ''}<span class="a365-bl">${esc(group.name)} (${group.agents.length})</span></button>`; }).join('');
+    return { html, color: '', count: groups.reduce((total, group) => total + group.agents.length, 0), groups: groups.length, note: '' };
+  }
+  const worldStyle = () => `transform:translate(${st.pan[0]}px,${st.pan[1]}px) scale(${st.zoom})`;
+  function applyView() { const world = root?.querySelector('.a365-world'); if (world) world.style.transform = worldStyle().replace('transform:', ''); const zoom = root?.querySelector('.a365-zoomval'); if (zoom) zoom.textContent = `${Math.round(st.zoom * 100)}%`; }
+  const zoomBy = delta => { st.zoom = Math.min(2.4, Math.max(.5, +(st.zoom + delta).toFixed(2))); applyView(); };
+  function refreshWorld() { const world = root.querySelector('.a365-world'); if (!world) return; const view = mapWorld(); world.innerHTML = view.html; const note = root.querySelector('.a365-mapnote'); if (note) note.textContent = view.note; const value = root.querySelector('#a365-maxval'); if (value) value.textContent = st.maxPer; }
+  function mapFilterPanel() {
+    const f = st.filters, facets = store.facets();
+    const select = (key, name, options) => `<label class="a365-sel"><span>${name}</span><select data-a365-filter="${key}"><option value="">All</option>${options.map(option => `<option value="${esc(option)}" ${f[key] === option ? 'selected' : ''}>${esc(key === 'publisher' ? label(option) : option)}</option>`).join('')}</select></label>`;
+    const flag = (key, name, on) => `<label class="a365-flag"><input type="checkbox" data-a365-flag="${key}" ${on ? 'checked' : ''}> ${name}</label>`;
+    return `<div class="a365-fpanel a365-floating" role="group" aria-label="Map filters"><header><strong>Filters</strong><button class="a365-x" data-a365-mapfilters aria-label="Close filters">${icon('fa-xmark')}</button></header>${select('status', 'Status', facets.status)}${select('publisher', 'Publisher type', facets.publisher)}${select('platform', 'Platform', facets.platform)}${select('channel', 'Channel', facets.channel)}${select('dataSource', 'Data source', facets.dataSource)}<div class="a365-flags"><span>Usage and security</span>${flag('risk', 'Has risk signals', f.risk === 'at-risk')}${flag('ownerless', 'Without owner', f.ownerless)}${flag('unmanaged', 'Unmanaged', f.unmanaged)}${flag('errors', 'Exception rate above 1%', f.errors)}</div>${Object.entries(f).some(([key, value]) => key !== 'query' && value) ? `<button class="a365-link" data-a365-clear>${icon('fa-xmark')} Clear filters</button>` : ''}</div>`;
+  }
+  function mapPopover() {
+    if (st.pop === 'settings') return `<div class="a365-pop a365-floating" role="group" aria-label="Map settings"><strong>Map settings</strong><label>Max agents per cluster <b id="a365-maxval">${st.maxPer}</b><input id="a365-max" type="range" min="1" max="12" value="${st.maxPer}"></label><small>Applies when you open a cluster. Large estates stay responsive.</small></div>`;
+    if (st.pop === 'help') return `<div class="a365-pop a365-floating" role="group" aria-label="Keyboard shortcuts"><strong>Keyboard shortcuts</strong><dl><dt>+ / −</dt><dd>Zoom in or out</dd><dt>0</dt><dd>Fit to screen</dd><dt>Arrow keys</dt><dd>Pan the map</dd><dt>Esc</dt><dd>Close, or go back one level</dd></dl><small>Drag the background to pan. Select a cluster to open it, then an agent for details.</small></div>`;
+    return '';
+  }
+  function mapPageHtml() {
+    if (st.single) return `<div class="a365-mapcard single">${singleMapHtml()}</div>`;
+    const view = mapWorld(), tool = (attr, glyph, name, extra = '') => `<button class="a365-tb" ${attr} aria-label="${name}" title="${name}" ${extra}>${icon(glyph)}</button>`;
+    const tools = `<div class="a365-tools a365-floating" role="toolbar" aria-label="Map tools">${tool('data-a365-nothing', 'fa-arrow-pointer', 'Select', 'aria-pressed="true"')}${tool('data-a365-export', 'fa-file-export', 'Export agents shown')}${tool('data-a365-center', 'fa-crosshairs', 'Center map')}${tool('data-a365-zoom="in"', 'fa-plus', 'Zoom in')}${tool('data-a365-zoom="out"', 'fa-minus', 'Zoom out')}<span class="a365-zoomval" aria-live="polite">${Math.round(st.zoom * 100)}%</span>${tool('data-a365-fit', 'fa-expand', 'Fit to screen')}${tool('data-a365-pop="settings"', 'fa-gear', 'Map settings', `aria-expanded="${st.pop === 'settings'}"`)}${tool('data-a365-pop="help"', 'fa-circle-question', 'Keyboard shortcuts', `aria-expanded="${st.pop === 'help'}"`)}${tool('data-a365-full', st.mapFull ? 'fa-compress' : 'fa-maximize', st.mapFull ? 'Exit full screen' : 'Full screen')}</div>`;
+    const chip = st.cluster ? `<div class="a365-clusterbar a365-floating"><button class="a365-cback" data-a365-allclusters>${icon('fa-arrow-left')} All clusters</button><b style="--c:${view.color}">${esc(st.cluster)} (${view.count})</b></div>` : '';
+    const empty = view.html ? '' : `<div class="a365-empty a365-center">${icon('fa-filter-circle-xmark')}<strong>No agents match these filters</strong><span>Clear a filter to see the map again.</span></div>`;
+    return `<div class="a365-mapcard ${st.mapFull ? 'full' : ''}"><div class="a365-maptabs"><span>${icon('fa-robot')} All agents</span><small>${st.cluster ? `${view.count} agents in ${esc(st.cluster)}` : `${view.count} agents · ${view.groups} clusters`}</small></div>
+      <div class="a365-viewport" role="region" aria-label="Agent clusters. Select a cluster to open it."><div class="a365-world" style="${worldStyle()}">${view.html}</div>${empty}
+      ${st.mapFilters ? mapFilterPanel() : `<button class="a365-fbtn a365-floating" data-a365-mapfilters aria-expanded="false">Filters ${icon('fa-table-columns')}</button>`}${tools}${chip}${mapPopover()}
+      <p class="a365-mapnote" aria-live="polite">${esc(view.note)}</p>${showLoader ? `<div class="a365-loading" role="status"><i class="a365-spin"></i> Loading more agents…</div>` : ''}</div>
+      <div class="a365-maplegend"><span><i class="dot high"></i>High risk signal</span><span><i class="dot medium"></i>Medium</span><span><i class="dot low"></i>Low</span><span><i class="dot dashed"></i>No owner</span><span><i class="dot blocked"></i>Blocked</span><span class="a365-badgekey"><em>3</em>Agents with risk signals</span></div></div>`;
+  }
+  function deletedHtml() {
+    const list = store.deleted();
+    if (!list.length) return `<div class="a365-empty">${icon('fa-trash-can')}<strong>No deleted agents</strong><span>Agents you delete or remove in this demo session appear here, and can be restored.</span></div>`;
+    return `<div class="a365-tablewrap"><table class="a365-table"><thead><tr><th>Name</th><th>Publisher type</th><th>Platform</th><th>Owner</th><th></th></tr></thead><tbody>${list.map(agent => `<tr><td><span class="a365-name">${avatar(agent)}<span><b>${esc(agent.name)}</b><small>${esc(agent.type)}</small></span></span></td><td>${esc(label(agent.publisher))}</td><td>${esc(agent.platform)}</td><td>${agent.owner ? esc(agent.owner) : '<span class="a365-noowner">No owner</span>'}</td><td><button class="a365-btn" data-a365-restore="${agent.id}" ${can() ? '' : `disabled title="${WRITE_NOTE}"`}>${icon('fa-rotate-left')} Restore</button></td></tr>`).join('')}</tbody></table></div><p class="a365-count">Deleted in this demo session. Restoring brings the agent back to the registry without its earlier pins.</p>`;
   }
   function singleMapHtml() {
     const m = store.singleMap(st.single), agent = m.agent;
@@ -123,9 +184,9 @@ const Agent365UI = (() => {
       <div class="a365-nodedetail" aria-live="polite">${detail}</div></div>`;
   }
   function registryHtml() {
-    const tabs = [['registry', 'Registry'], ['requests', `Requests${store.summary().pending ? ` (${store.summary().pending})` : ''}`], ['map', 'Map']];
-    const body = st.tab === 'registry' ? tableHtml() : st.tab === 'requests' ? requestsHtml() : mapHtml();
-    return `<div class="a365-tabs" role="tablist" aria-label="Agent views">${tabs.map(([key, name]) => `<button role="tab" aria-selected="${st.tab === key}" class="${st.tab === key ? 'on' : ''}" data-a365-tab="${key}">${name}</button>`).join('')}</div>${st.single ? '' : summaryTiles()}${st.tab === 'requests' || st.single ? '' : toolbarHtml()}<div id="a365-list">${body}</div>`;
+    const tabs = [['registry', 'Registry'], ['requests', `Requests${store.summary().pending ? ` (${store.summary().pending})` : ''}`]];
+    const body = st.tab === 'registry' ? tableHtml() : requestsHtml();
+    return `<div class="a365-tabs" role="tablist" aria-label="Agent views">${tabs.map(([key, name]) => `<button role="tab" aria-selected="${st.tab === key}" class="${st.tab === key ? 'on' : ''}" data-a365-tab="${key}">${name}</button>`).join('')}</div>${summaryTiles()}${st.tab === 'requests' ? '' : toolbarHtml()}<div id="a365-list">${body}</div>`;
   }
 
   /* ---------- settings ---------- */
@@ -208,19 +269,22 @@ const Agent365UI = (() => {
   }
 
   /* ---------- rendering and events ---------- */
-  function pageHtml() { return st.page === 'overview' ? overviewHtml() : st.page === 'registry' ? registryHtml() : settingsHtml(); }
+  function pageHtml() { return { overview: overviewHtml, registry: registryHtml, map: mapPageHtml, deleted: deletedHtml, settings: settingsHtml }[st.page](); }
   function render(focus = '') {
     if (!root?.isConnected) return;
+    popNow = st.anim; st.anim = false; showLoader = st.mapLoad; st.mapLoad = false;
     root.className = 'a365-root';
     root.innerHTML = `<div class="a365">${navHtml()}<section class="a365-main" aria-label="Agents">${headerHtml()}<div class="a365-page">${pageHtml()}</div></section>${panelHtml()}${dialogHtml()}<div class="a365-toast ${st.toast ? 'on' : ''}" role="status" aria-live="polite">${esc(st.toast)}</div></div>`;
     if (focus) root.querySelector(focus)?.focus({ preventScroll: true });
   }
-  function refreshList() { const list = root.querySelector('#a365-list'); if (!list) return; const body = st.tab === 'registry' ? tableHtml() : st.tab === 'map' ? mapHtml() : requestsHtml(); list.innerHTML = body; }
+  function refreshList() { const list = root.querySelector('#a365-list'); if (!list) return; const body = st.tab === 'registry' ? tableHtml() : requestsHtml(); list.innerHTML = body; }
   function toast(message) { st.toast = message; const element = root.querySelector('.a365-toast'); if (element) { element.textContent = message; element.classList.add('on'); } clearTimeout(toastTimer); toastTimer = setTimeout(() => { st.toast = ''; root?.querySelector('.a365-toast')?.classList.remove('on'); }, 4200); }
   const closeAll = () => { st.panel = null; st.dialog = null; };
   function go(target) {
     closeAll(); st.single = null; st.mapNode = null; st.card = '';
     if (target === 'settings') { st.page = 'settings'; return; }
+    if (target === 'deleted') { st.page = 'deleted'; return; }
+    if (target === 'map') { Object.assign(st, { page: 'map', filters: {}, cluster: null, zoom: 1, pan: [0, 0], mapFilters: false, mapFull: false, pop: null, mapLoad: true, anim: true }); return; }
     if (target === 'registry') { st.page = 'registry'; st.tab = 'registry'; st.filters = {}; return; }
     st.page = 'registry'; st.tab = target === 'requests' ? 'requests' : 'registry'; st.filters = {};
     if (CARD_FILTERS[target]) { st.filters = { ...CARD_FILTERS[target] }; st.card = target; }
@@ -275,8 +339,17 @@ const Agent365UI = (() => {
     }
     if (d.a365Move) { store.movePin(d.id, d.a365Move); render('#a365-ptitle'); toast('Pin order updated. Recorded locally.'); return; }
     if (d.a365Decide) { try { const agent = store.decide(d.id, d.a365Decide); render(); toast(`${agent.name} ${d.a365Decide === 'approve' ? 'approved and published' : 'request rejected'}. Recorded locally.`); } catch (error) { toast(error.message); } return; }
-    if (d.a365Single) { st.single = d.a365Single; st.mapNode = null; st.page = 'registry'; st.tab = 'map'; st.panel = null; render('.a365-singlehead button'); return; }
-    if (d.a365BackMap !== undefined) { st.single = null; st.mapNode = null; render('.a365-tabs .on'); return; }
+    if (d.a365Single) { st.single = d.a365Single; st.mapNode = null; st.page = 'map'; st.panel = null; st.mapFull = false; render('.a365-singlehead button'); return; }
+    if (d.a365BackMap !== undefined) { st.single = null; st.mapNode = null; st.anim = true; render('.a365-fbtn'); return; }
+    if (d.a365Cluster) { st.cluster = d.a365Cluster; st.zoom = 1; st.pan = [0, 0]; st.anim = true; render('.a365-cback'); return; }
+    if (d.a365Allclusters !== undefined) { st.cluster = null; st.zoom = 1; st.pan = [0, 0]; st.anim = true; render(); return; }
+    if (d.a365Zoom) { zoomBy(d.a365Zoom === 'in' ? .2 : -.2); return; }
+    if (d.a365Fit !== undefined) { st.zoom = 1; st.pan = [0, 0]; applyView(); return; }
+    if (d.a365Center !== undefined) { st.pan = [0, 0]; applyView(); return; }
+    if (d.a365Mapfilters !== undefined) { st.mapFilters = !st.mapFilters; render(st.mapFilters ? '.a365-fpanel select' : '.a365-fbtn'); return; }
+    if (d.a365Pop) { st.pop = st.pop === d.a365Pop ? null : d.a365Pop; render(); return; }
+    if (d.a365Full !== undefined) { st.mapFull = !st.mapFull; render('[data-a365-full]'); return; }
+    if (d.a365Restore) { try { const agent = store.restore(d.a365Restore); render(); toast(`${agent.name} restored. Recorded locally.`); } catch (error) { toast(error.message); } return; }
     if (d.a365Rule) { store.toggleRule(d.a365Rule); render(`[data-a365-rule="${d.a365Rule}"]`); toast('Rule updated for this demo session only.'); return; }
     if (d.a365WizUpload !== undefined) { st.wizard.uploaded = true; render('[data-a365-wiz-next]'); return; }
     if (d.a365WizBack !== undefined) { st.wizard.step -= 1; render('#a365-dtitle'); return; }
@@ -296,12 +369,14 @@ const Agent365UI = (() => {
   }
   function onChange(event) {
     const t = event.target;
-    if (t.dataset.a365Filter !== undefined) { st.filters = { ...st.filters, [t.dataset.a365Filter]: t.value }; st.card = ''; render(`[data-a365-filter="${t.dataset.a365Filter}"]`); }
+    if (t.dataset.a365Filter !== undefined) { st.filters = { ...st.filters, [t.dataset.a365Filter]: t.value }; st.card = ''; st.anim = st.page === 'map'; render(`[data-a365-filter="${t.dataset.a365Filter}"]`); }
+    else if (t.dataset.a365Flag) { const key = t.dataset.a365Flag; st.filters = { ...st.filters, [key]: key === 'risk' ? (t.checked ? 'at-risk' : '') : t.checked }; st.anim = true; render(`[data-a365-flag="${key}"]`); }
     else if (t.dataset.a365Role !== undefined) { st.role = t.value; render('[data-a365-role]'); }
     else if (t.dataset.a365Col) { st.cols[t.dataset.a365Col] = t.checked ? 1 : 0; render(`[data-a365-col="${t.dataset.a365Col}"]`); }
     else if (t.dataset.a365Wiz) { st.wizard[t.dataset.a365Wiz] = t.value; }
   }
   function onInput(event) {
+    if (event.target.id === 'a365-max') { st.maxPer = Number(event.target.value); refreshWorld(); return; }
     if (event.target.id !== 'a365-search') return;
     st.filters = { ...st.filters, query: event.target.value };
     refreshList();
@@ -309,13 +384,32 @@ const Agent365UI = (() => {
   function onKey(event) {
     if (!root?.isConnected) return;
     if (event.key === 'Escape' && (st.dialog || st.panel)) { event.preventDefault(); if (st.dialog) st.dialog = null; else st.panel = null; render(); return; }
+    if (st.page === 'map' && !st.dialog && !st.panel && (event.key === 'Escape' || !event.target.closest?.('input, select, textarea'))) {
+      const nudge = { ArrowLeft: [40, 0], ArrowRight: [-40, 0], ArrowUp: [0, 40], ArrowDown: [0, -40] }[event.key];
+      if (event.key === '+' || event.key === '=') { zoomBy(.2); return; }
+      if (event.key === '-' || event.key === '_') { zoomBy(-.2); return; }
+      if (event.key === '0') { st.zoom = 1; st.pan = [0, 0]; applyView(); return; }
+      if (nudge && !st.single && !event.target.closest?.('button')) { event.preventDefault(); st.pan = [st.pan[0] + nudge[0], st.pan[1] + nudge[1]]; applyView(); return; }
+      if (event.key === 'Escape') {
+        if (st.pop) st.pop = null; else if (st.mapFilters) st.mapFilters = false; else if (st.mapFull) st.mapFull = false; else if (st.single) st.single = null; else if (st.cluster) { st.cluster = null; st.anim = true; } else return;
+        event.preventDefault(); render(); return;
+      }
+    }
     const node = event.target.closest?.('[data-a365-node]');
     if (node && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); st.mapNode = node.dataset.a365Node; render(`[data-a365-node="${CSS.escape(node.dataset.a365Node)}"]`); }
   }
-  function unmount() { clearTimeout(toastTimer); if (root) { root.removeEventListener('click', onClick); root.removeEventListener('change', onChange); root.removeEventListener('input', onInput); } document.removeEventListener('keydown', onKey); root = null; }
+  function onPointerDown(event) {
+    if (!root?.isConnected || st.page !== 'map' || st.single || event.button) return;
+    const viewport = event.target.closest('.a365-viewport');
+    if (!viewport || event.target.closest('button, input, select, .a365-floating')) return;
+    drag = { x: event.clientX, y: event.clientY, pan: [...st.pan] }; viewport.classList.add('grab');
+  }
+  function onPointerMove(event) { if (!drag) return; st.pan = [drag.pan[0] + event.clientX - drag.x, drag.pan[1] + event.clientY - drag.y]; applyView(); }
+  function onPointerUp() { if (!drag) return; drag = null; root?.querySelector('.a365-viewport')?.classList.remove('grab'); }
+  function unmount() { clearTimeout(toastTimer); if (root) { root.removeEventListener('click', onClick); root.removeEventListener('change', onChange); root.removeEventListener('input', onInput); root.removeEventListener('pointerdown', onPointerDown); } document.removeEventListener('keydown', onKey); document.removeEventListener('pointermove', onPointerMove); document.removeEventListener('pointerup', onPointerUp); drag = null; root = null; }
   function mount(element) {
     unmount(); root = element; store = Agent365.createStore(); st = fresh();
-    root.addEventListener('click', onClick); root.addEventListener('change', onChange); root.addEventListener('input', onInput); document.addEventListener('keydown', onKey);
+    root.addEventListener('click', onClick); root.addEventListener('change', onChange); root.addEventListener('input', onInput); root.addEventListener('pointerdown', onPointerDown); document.addEventListener('keydown', onKey); document.addEventListener('pointermove', onPointerMove); document.addEventListener('pointerup', onPointerUp);
     render();
   }
   return { mount, unmount };

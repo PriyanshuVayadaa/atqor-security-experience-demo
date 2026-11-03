@@ -136,3 +136,23 @@ test('copy keeps the simulation boundary and avoids overclaims', () => {
   assert.ok(!/guarantee|100%|zero risk|real tenant|live tenant/i.test(text));
   assert.ok(Data.agents.every(agent => agent.description.length > 10));
 });
+
+test('map clusters follow the admin center groups and cover every agent', () => {
+  const store = Agent365.createStore(), groups = store.map();
+  assert.equal(groups.reduce((total, group) => total + group.agents.length, 0), store.summary().total);
+  const names = groups.map(group => group.name);
+  for (const name of ['Microsoft', 'Third party', 'Copilot Studio', 'Agent Builder', 'Foundry']) assert.ok(names.includes(name), name);
+  assert.ok(!names.includes('Other') && !names.includes('Microsoft Foundry'));
+  assert.equal(store.map({ ownerless: true }).reduce((total, group) => total + group.agents.length, 0), store.summary().ownerless);
+});
+
+test('deleted agents can be restored once', () => {
+  const store = Agent365.createStore();
+  store.act('AG-019', 'delete');
+  assert.deepEqual(store.deleted().map(agent => agent.id), ['AG-019']);
+  assert.equal(store.summary().total, Data.agents.length - 1);
+  store.restore('AG-019');
+  assert.equal(store.deleted().length, 0);
+  assert.equal(store.get('AG-019').pinned, false);
+  assert.throws(() => store.restore('AG-019'));
+});
