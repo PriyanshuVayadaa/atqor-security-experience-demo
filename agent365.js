@@ -8,7 +8,7 @@ const Agent365 = (() => {
   const clone = value => JSON.parse(JSON.stringify(value));
   const riskCount = agent => agent.risks.reduce((total, item) => total + item.occ, 0);
   const sevRank = { High: 3, Medium: 2, Low: 1 };
-  const clusterOf = agent => agent.publisher === 'Microsoft' ? 'Microsoft' : agent.publisher === 'Third party' && agent.platform === 'Other' ? 'Third party' : agent.platform === 'Microsoft Foundry' ? 'Foundry' : agent.platform === 'Other' ? 'Others' : agent.platform;
+  const clusterOf = agent => agent.publisher === 'Microsoft' ? 'Microsoft' : agent.publisher === 'Third party' ? 'Third party' : agent.platform === 'Microsoft Foundry' ? 'Foundry' : agent.platform === 'Other' ? 'Others' : agent.platform;
 
   function createStore() {
     let agents = clone(Data.agents);
@@ -112,7 +112,7 @@ const Agent365 = (() => {
     function list(filters = {}, sort = { key: 'name', dir: 'asc' }) {
       const sign = sort.dir === 'desc' ? -1 : 1;
       const value = agent => ({ name: agent.name.toLowerCase(), status: agent.status, publisher: agent.publisher, platform: agent.platform, owner: (agent.owner || '').toLowerCase(), risks: riskCount(agent), modified: agent.modified, version: agent.version }[sort.key]);
-      return live().filter(agent => matches(agent, filters)).sort((x, y) => (value(x) > value(y) ? 1 : value(x) < value(y) ? -1 : 0) * sign || x.name.localeCompare(y.name)).map(clone);
+      return live().filter(agent => matches(agent, filters)).sort((x, y) => (value(x) > value(y) ? 1 : value(x) < value(y) ? -1 : 0) * sign || x.name.localeCompare(y.name)).map(agent => ({ ...agent }));
     }
 
     function summary() {
@@ -131,10 +131,10 @@ const Agent365 = (() => {
       const platforms = {};
       published.forEach(agent => { platforms[agent.platform] = (platforms[agent.platform] || 0) + 1; });
       const topPlatforms = Object.entries(platforms).map(([name, count]) => ({ name, count })).sort((x, y) => y.count - x.count || x.name.localeCompare(y.name)).slice(0, 5);
-      const trend = Array.from({ length: 30 }, (_, day) => 1480 + day * 9 + ([0, 6].includes((day + 2) % 7) ? -420 : 0) + Math.round(Math.sin(day * 1.3) * 55));
+      const trend = Array.from({ length: 30 }, (_, day) => 14600 + day * 90 + ([0, 6].includes((day + 2) % 7) ? -4200 : 0) + Math.round(Math.sin(day * 1.3) * 520));
       const trending = [...all].filter(agent => agent.status !== 'Blocked').sort((x, y) => y.activity.activeUsers - x.activity.activeUsers).slice(0, 5).map(agent => ({ id: agent.id, name: agent.name, users: agent.activity.activeUsers }));
       return {
-        hero: { registry: all.length, activeUsers: 1284, runtimeHours: Math.round(all.reduce((total, agent) => total + agent.activity.hours, 0)), syncedPlatforms: Data.connectedPlatforms.filter(item => item.connected).length },
+        hero: { registry: all.length, activeUsers: 18420, runtimeHours: Math.round(all.reduce((total, agent) => total + agent.activity.hours, 0)), syncedPlatforms: Data.connectedPlatforms.filter(item => item.connected).length },
         actions: summary(), byPublisher, topPlatforms, trend, trending
       };
     }
@@ -161,7 +161,7 @@ const Agent365 = (() => {
       const name = String(spec.name || '').trim();
       if (!name) throw new Error('Package has no agent name');
       if (live().some(item => item.name === name)) throw new Error('This package is already in the registry');
-      const agent = Data.make(`AG-${String(100 + agents.length).padStart(3, '0')}`, name, { platform: 'Copilot Studio', type: 'MCS DA', owner: spec.owner || Data.admin.name, channels: ['Teams', 'Copilot'], version: '1.0.0', created: '2026-11-02', modified: '2026-11-02', description: spec.description || 'Uploaded as a package by an administrator.', deployedTo: spec.scope || 'Not deployed', policyTemplate: spec.template || 'Standard protection' });
+      const agent = Data.make(`AG-${9000 + agents.length}`, name, { platform: 'Copilot Studio', type: 'MCS DA', owner: spec.owner || Data.admin.name, channels: ['Teams', 'Copilot'], version: '1.0.0', created: '2026-11-02', modified: '2026-11-02', description: spec.description || 'Uploaded as a package by an administrator.', deployedTo: spec.scope || 'Not deployed', policyTemplate: spec.template || 'Standard protection' });
       agents.push(agent);
       record(agent, 'Agent added', `Published from a package. ${agent.deployedTo === 'Not deployed' ? 'Not deployed to anyone yet' : `Deployed to ${agent.deployedTo}`}. Policy template: ${agent.policyTemplate}.`);
       return clone(agent);
@@ -175,10 +175,20 @@ const Agent365 = (() => {
       return clone(agent);
     }
 
+    function tools() {
+      const byName = new Map();
+      live().filter(agent => agent.sdk).forEach(agent => agent.tools.forEach(item => {
+        const entry = byName.get(item.name) || { name: item.name, kind: item.kind, agents: [], calls: 0, failed: 0 };
+        entry.agents.push(agent.name); entry.calls += item.calls; entry.failed += item.calls * item.exc / 100;
+        byName.set(item.name, entry);
+      }));
+      return [...byName.values()].map(item => ({ name: item.name, kind: item.kind, agents: item.agents, calls: item.calls, exc: Math.round(item.failed / item.calls * 1000) / 10 })).sort((x, y) => y.calls - x.calls);
+    }
+
     const toggleRule = id => { const rule = rules.find(item => item.id === id); if (!rule) throw new Error('Unknown rule'); rule.enabled = !rule.enabled; return clone(rule); };
 
     return {
-      get: id => clone(find(id)), list, summary, facets, overview, map, singleMap, exportCsv, actionsFor, act, movePin, decide, addAgent, restore, toggleRule,
+      get: id => clone(find(id)), list, summary, facets, overview, map, singleMap, exportCsv, actionsFor, act, movePin, decide, addAgent, restore, toggleRule, tools,
       deleted: () => agents.filter(agent => agent.removed).map(clone),
       requests: () => clone(requests).map(item => ({ ...item, agentName: find(item.agentId).name })),
       pinned: () => pinnedList().map(clone), rules: () => clone(rules), log: () => clone(log), canPinMore: () => pinnedList().length < MAX_PINNED

@@ -76,11 +76,11 @@ test('pinning requires a deployed, unblocked agent and is capped at three', () =
 
 test('adding an agent from a package registers it once and records the action', () => {
   const store = Agent365.createStore(), total = store.summary().total;
-  const agent = store.addAgent({ name: 'Facilities Request Agent', scope: 'All users', template: 'Strict protection' });
+  const agent = store.addAgent({ name: 'Contoso Concierge Agent', scope: 'All users', template: 'Strict protection' });
   assert.equal(store.summary().total, total + 1);
   assert.equal(agent.publisher, 'Your org');
   assert.equal(store.log()[0].action, 'Agent added');
-  assert.throws(() => store.addAgent({ name: 'Facilities Request Agent' }), /already/);
+  assert.throws(() => store.addAgent({ name: 'Contoso Concierge Agent' }), /already/);
   assert.throws(() => store.addAgent({ name: ' ' }));
 });
 
@@ -155,4 +155,17 @@ test('deleted agents can be restored once', () => {
   assert.equal(store.deleted().length, 0);
   assert.equal(store.get('AG-019').pinned, false);
   assert.throws(() => store.restore('AG-019'));
+});
+
+test('tenant-scale estate matches the admin center cluster counts', () => {
+  const store = Agent365.createStore(), counts = Object.fromEntries(store.map().map(group => [group.name, group.agents.length]));
+  assert.deepEqual(counts, { 'Copilot Studio': 2127, 'Third party': 341, 'Agent Builder': 109, Microsoft: 32, Foundry: 23, 'Agents Toolkit': 12, SharePoint: 9, 'Copilot Studio Legacy': 4, Others: 2 });
+  assert.equal(new Set(Data.agents.map(agent => agent.name)).size, Data.agents.length);
+});
+
+test('tools roll up SDK agents and flag high exception rates', () => {
+  const tools = Agent365.createStore().tools();
+  assert.ok(tools.length >= 5 && tools.every((item, i) => i === 0 || tools[i - 1].calls >= item.calls));
+  assert.ok(tools.some(item => item.name === 'Microsoft Graph' && item.agents.length >= 3));
+  assert.ok(tools.find(item => item.name === 'CRM connector').exc > 1);
 });

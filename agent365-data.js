@@ -12,7 +12,7 @@ const Agent365Data = (() => {
   const risk = (sev, title, detail, source, occ) => ({ sev, title, detail, source, occ });
   const tool = (name, kind, calls, exc) => ({ name, kind, calls, exc });
 
-  const agents = [
+  const curated = [
     a('AG-001', 'Researcher', { publisher: 'Microsoft', platform: 'Microsoft', type: 'First-party', owner: 'Microsoft', channels: ['Copilot', 'Microsoft 365 apps'], version: '2026.10', description: 'Multi-step research across work and web sources.', dataSources: ['Work data', 'Web'], knowledge: ['Microsoft Graph', 'Web search'], activity: { activeUsers: 842, sessions: 6120, exceptionRate: .6, hours: 612 } }),
     a('AG-002', 'Analyst', { publisher: 'Microsoft', platform: 'Microsoft', type: 'First-party', owner: 'Microsoft', channels: ['Copilot'], version: '2026.10', description: 'Data analysis from uploaded files and work data.', dataSources: ['Work data'], knowledge: ['Uploaded files'], activity: { activeUsers: 517, sessions: 3380, exceptionRate: .4, hours: 288 } }),
     a('AG-003', 'Facilitator', { publisher: 'Microsoft', platform: 'Microsoft', type: 'First-party', owner: 'Microsoft', channels: ['Teams'], version: '2026.09', description: 'Keeps meetings on track with agendas and notes.', dataSources: ['Meeting data'], activity: { activeUsers: 366, sessions: 2104, exceptionRate: .3, hours: 140 } }),
@@ -71,6 +71,70 @@ const Agent365Data = (() => {
     a('AG-027', 'Travel Policy Bot', { publisher: 'Your users', platform: 'Copilot Studio', type: 'MCS DA', owner: 'Lina Park', status: 'Draft', channels: ['Teams'], version: '0.2.0', modified: '2026-10-27', description: 'Draft. Not shared yet.', deployedTo: 'Not deployed' }),
     a('AG-028', 'Pricing Helper', { publisher: 'Your users', platform: 'Copilot Studio', type: 'MCS DA', owner: 'Jordan Lee', status: 'Not activated', channels: ['Teams'], version: '1.0.0', modified: '2026-11-01', description: 'Shared by its creator. Waiting for admin approval to publish to the Sales organization.', deployedTo: 'Just me' })
   ];
+
+  // Tenant-scale filler so the map and registry look like a real estate. Seeded, so every load is identical.
+  const clusterOf = agent => agent.publisher === 'Microsoft' ? 'Microsoft' : agent.publisher === 'Third party' ? 'Third party' : agent.platform === 'Microsoft Foundry' ? 'Foundry' : agent.platform === 'Other' ? 'Others' : agent.platform;
+  const TARGET = { 'Copilot Studio': 2127, 'Third party': 341, 'Agent Builder': 109, Microsoft: 32, Foundry: 23, 'Agents Toolkit': 12, SharePoint: 9, 'Copilot Studio Legacy': 4, Others: 2 };
+  const bulk = () => {
+    let seed = 20261102;
+    const rnd = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+    const pick = list => list[Math.floor(rnd() * list.length)];
+    const first = ['Aisha', 'Daniel', 'Elena', 'Marcus', 'Hannah', 'Jordan', 'Maya', 'Owen', 'Lina', 'Sam', 'Noor', 'Victor', 'Dara', 'Tomás', 'Priya', 'Chen'];
+    const last = ['Khan', 'Cho', 'Rossi', 'Webb', 'Brooks', 'Lee', 'Singh', 'Price', 'Park', 'Okafor', 'Haddad', 'Lund', 'Kim', 'Alvarez'];
+    const teams = ['HR', 'Finance', 'Sales', 'Legal', 'IT', 'Operations', 'Support', 'Marketing', 'Procurement', 'Facilities', 'Security', 'Engineering', 'Training', 'Customer Success'];
+    const roles = ['FAQ Bot', 'Helper', 'Assistant', 'Triage', 'Request Agent', 'Summarizer', 'Policy Finder', 'Coach', 'Navigator', 'Checker', 'Planner', 'Reporter'];
+    const partners = ['Fabrikam', 'Northwind', 'Adatum', 'Tailspin', 'Litware', 'Proseware', 'Wingtip', 'Woodgrove', 'Lucerne', 'Coho', 'Relecloud', 'Alpine'];
+    const partnerRoles = ['Recruiter', 'Contract Reviewer', 'Spend Insights', 'Travel Concierge', 'Support Triage', 'Sales Assistant', 'Invoice Reader', 'Compliance Checker', 'Onboarding Guide', 'Analytics Companion'];
+    const microsoftNames = ['Copilot Tuning', 'Sales Agent', 'Customer Service Agent', 'Interpreter', 'Learning Coach', 'Skills Agent', 'Workflow Agent', 'Writing Coach', 'Idea Coach', 'Prompt Coach', 'Visual Creator', 'Surveys', 'People Agent', 'Knowledge Agent', 'Site Agent', 'Meeting Prep', 'Mail Triage', 'Calendar Helper', 'Document Reviewer', 'Data Explorer', 'Project Insights', 'Wellbeing Check-in', 'Policy Advisor', 'Procurement Guide', 'Field Assistant', 'Finance Analyst', 'Support Companion'];
+    const channels = ['Teams', 'Copilot', 'Outlook', 'Microsoft 365 apps', 'SharePoint'];
+    const sources = ['Embedded knowledge', 'SharePoint', 'Web', 'Work data'];
+    const groups = ['All users', 'Finance group', 'Sales group', 'Operations group', 'Legal group', 'Customer Success group'];
+    const specs = {
+      Microsoft: { publisher: 'Microsoft', platform: 'Microsoft', type: 'First-party', name: i => microsoftNames[i % microsoftNames.length], owner: () => 'Microsoft' },
+      'Third party': { publisher: 'Third party', platform: 'Other', type: 'Partner-built', name: () => `${pick(partners)} ${pick(partnerRoles)}` },
+      'Copilot Studio': { publisher: null, platform: 'Copilot Studio', type: null, name: () => `${pick(teams)} ${pick(roles)}` },
+      'Agent Builder': { publisher: 'Your users', platform: 'Agent Builder', type: 'Agent Builder', name: () => `${pick(teams)} ${pick(roles)}` },
+      Foundry: { publisher: 'Your org', platform: 'Microsoft Foundry', type: 'Foundry LOB', name: () => `${pick(teams)} ${pick(roles)}` },
+      'Agents Toolkit': { publisher: 'Your org', platform: 'Agents Toolkit', type: 'Agent Toolkit', name: () => `${pick(teams)} ${pick(roles)}` },
+      SharePoint: { publisher: 'Your users', platform: 'SharePoint', type: 'SharePoint', name: () => `${pick(teams)} Site Agent` },
+      'Copilot Studio Legacy': { publisher: 'Your users', platform: 'Copilot Studio Legacy', type: 'MCS CEA', name: () => `${pick(teams)} Legacy Bot` },
+      Others: { publisher: 'Your org', platform: 'Other', type: 'Custom', name: () => `${pick(teams)} Webhook Agent` }
+    };
+    const used = new Set([...curated.map(item => item.name), 'Contoso Concierge Agent']), have = {}, out = [];
+    curated.forEach(item => { have[clusterOf(item)] = (have[clusterOf(item)] || 0) + 1; });
+    let counter = 1000;
+    Object.entries(TARGET).forEach(([cluster, target]) => {
+      const spec = specs[cluster];
+      for (let index = 0; index < target - (have[cluster] || 0); index += 1) {
+        const stem = spec.name(index);
+        let name = stem, copy = 2;
+        while (used.has(name)) name = `${stem} ${copy++}`;
+        used.add(name);
+        const r = rnd(), publisher = spec.publisher || (rnd() < .38 ? 'Your org' : 'Your users');
+        const status = r < .8 ? 'Available' : r < .88 ? 'Draft' : r < .91 ? 'Blocked' : 'Not activated';
+        const ownerless = publisher === 'Your users' && rnd() < .02;
+        const owner = spec.owner ? spec.owner() : ownerless ? null : `${pick(first)} ${pick(last)}`;
+        const q = rnd(), users = Math.floor(rnd() * rnd() * 220), exc = Math.round(rnd() * rnd() * rnd() * 40) / 10;
+        const signals = [];
+        if (q < .008) signals.push(risk('High', 'Sensitive data reachable outside its audience', 'The agent can reach files labeled Confidential beyond the audience the data owner approved.', 'Microsoft Purview', 1 + Math.floor(rnd() * 4)));
+        else if (q < .03) signals.push(risk('Medium', 'Broad permissions requested', 'The agent identity holds more permissions than its tasks need.', 'Microsoft Entra', 1 + Math.floor(rnd() * 3)));
+        else if (q < .07) signals.push(risk('Low', 'No recent owner review', 'No owner has reviewed this agent in the last 90 days.', 'Agent 365', 1));
+        if (ownerless) signals.push(risk('Low', 'No active owner', 'The creator account was deleted. No one is accountable for this agent.', 'Agent 365', 1));
+        const deployed = status === 'Available';
+        out.push({
+          ...base, id: `AG-${++counter}`, name, publisher, platform: spec.platform, type: spec.type || (publisher === 'Your org' && rnd() < .4 ? 'MCS CEA' : 'MCS DA'), owner,
+          status, channels: [pick(channels), ...(rnd() < .35 ? [pick(channels)] : [])].filter((value, i, list) => list.indexOf(value) === i),
+          version: `${1 + Math.floor(rnd() * 3)}.${Math.floor(rnd() * 9)}.${Math.floor(rnd() * 9)}`, created: `2026-0${3 + Math.floor(rnd() * 6)}-${String(1 + Math.floor(rnd() * 27)).padStart(2, '0')}`,
+          modified: `2026-10-${String(1 + Math.floor(rnd() * 30)).padStart(2, '0')}`, description: `${name} sample agent for the ${pick(teams)} team.`,
+          deployedTo: deployed ? pick(groups) : status === 'Not activated' ? 'Just me' : 'Not deployed', dataSources: [pick(sources)], knowledge: [], tools: [], risks: signals,
+          managed: cluster === 'Third party' ? rnd() > .12 : true, sdk: false, pinned: false, pinOrder: 0,
+          activity: { activeUsers: deployed ? users : 0, sessions: deployed ? users * (3 + Math.floor(rnd() * 8)) : 0, exceptionRate: deployed ? exc : 0, hours: deployed ? Math.round(users * rnd() * 2) : 0 }, topUsers: []
+        });
+      }
+    });
+    return out;
+  };
+  const agents = [...curated, ...bulk()];
 
   const requests = [
     { id: 'REQ-310', agentId: 'AG-028', requestedBy: 'Jordan Lee', date: '2026-11-01', scope: 'Sales organization (1,240 users)', note: 'Share the pricing helper with all of Sales.' },
