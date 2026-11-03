@@ -88,7 +88,7 @@ At the warning, the audience can **stop and report** or **continue with the fict
 
 Controls include previous/next, play/pause, replay, scene pace, evidence details, keyboard/Escape behavior, and responsive presentation. Browser reputation, Defender for Endpoint, Defender XDR, and analyst actions are shown as separate capabilities with configuration/licensing caveats. A warning is not guaranteed for every file; endpoint detection and incident correlation depend on supported products, sensor coverage, configuration and available telemetry. Isolation is not malware removal or verified recovery. This is a fixed local narrative, not a sensor demo or connected tenant workflow; no actual download, execution, API request, isolation, removal, or tenant response occurs.
 
-Implementation: [defender-attack-reel.js](defender-attack-reel.js), [defender-attack-reel-ui.js](defender-attack-reel-ui.js), [defender-attack-reel.css](defender-attack-reel.css), routing in [app.js](app.js), and [tests/defender-attack-reel.test.cjs](tests/defender-attack-reel.test.cjs). The full suite contains **127 passing tests**. Browser checks cover both employee and analyst branches, the in-screen choices, evidence drawer, keyboard exit, and desktop full-screen geometry.
+Implementation: [defender-attack-reel.js](defender-attack-reel.js), [defender-attack-reel-ui.js](defender-attack-reel-ui.js), [defender-attack-reel.css](defender-attack-reel.css), routing in [app.js](app.js), and [tests/defender-attack-reel.test.cjs](tests/defender-attack-reel.test.cjs). The full suite contains **141 passing tests**. Browser checks cover both employee and analyst branches, the in-screen choices, evidence drawer, keyboard exit, and desktop full-screen geometry.
 
 ### Product stories: Entra, Intune and Purview
 
@@ -99,6 +99,18 @@ Each product has a cinematic, realistic-screen story built on the same engine as
 - **Microsoft Purview · Data protection story**: a Confidential file is emailed to an external partner, a DLP policy tip stops it, and an analyst resolves the alert. The rule covers the modeled email scenario only.
 
 Implementation: [story-episodes.js](story-episodes.js) (pure model), [story-screens.js](story-screens.js) (screens, visuals, endings), [story-ui.js](story-ui.js) (player), [story-screens.css](story-screens.css), routing in [app.js](app.js), and [tests/story-episodes.test.cjs](tests/story-episodes.test.cjs).
+
+### Agent 365 module (Microsoft 365 admin center · Agents)
+
+Open **Agent 365** from the sidebar, the workspace picker, or the Home card. It replicates the Agents experience of the Microsoft 365 admin center as a separate, desktop-only module with fictional Contoso data and no tenant connection.
+
+- **Overview:** registry, active users, run-time and registry-sync metrics; "Top actions for you" (pending requests, agents at risk, without owners, with exceptions) that open a pre-filtered registry; agents by creator, top platforms, active users over time, trending agents.
+- **All agents:** Registry (summary tiles, search, status/publisher/channel/platform/data-source filters, sortable columns, customize view, compact list, CSV export of the filtered list, Add agent wizard, Manage pinned agents), Requests (approve or reject) and Map (clusters by platform, risk and ownership markers, plus a single agent map for agents that report observability data).
+- **Agent details pane:** Details, Users, Data and tools, Security and Activity tabs, state-based actions (block, unblock, assign owner, delete or remove, install, pin) and a Risk details pane grouped by severity and source.
+- **Settings:** policy templates, governance rules, registry sync and a local admin activity log.
+- A role switch shows that a Global Reader can view but not act. Actions are recorded locally only and never change a tenant.
+
+Implementation: [agent365-data.js](agent365-data.js) (fixture), [agent365.js](agent365.js) (pure model), [agent365-ui.js](agent365-ui.js), [agent365.css](agent365.css), routing in [app.js](app.js), and [tests/agent365.test.cjs](tests/agent365.test.cjs). Structure follows Microsoft Learn's Agent 365 admin documentation; counts, agents, risk signals and platforms are invented samples.
 
 Implementation: [defender-data.js](defender-data.js), the shared configurable [purview-modules-ui.js](purview-modules-ui.js) and [purview-modules.css](purview-modules.css), routing in [app.js](app.js), and [tests/defender-data.test.cjs](tests/defender-data.test.cjs). The shared renderer keeps Defender/Purview filters separate and uses the correct product name in details and exports. Browser checks cover every Defender module/detail/link, filtered export, time/unit/state/search filters, desktop/mobile light/dark layouts, and existing hunting/action/Purview regressions.
 
