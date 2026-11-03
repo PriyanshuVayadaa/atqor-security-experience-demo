@@ -163,3 +163,26 @@ body.dark .a365-scroll{background:linear-gradient(180deg,#fff0 0,var(--a-bg) 270
 .a365-toast{position:fixed;left:50%;bottom:26px;z-index:90;max-width:min(640px,90vw);padding:11px 18px;border-radius:6px;background:#242424;color:#fff;transform:translate(-50%,20px);opacity:0;pointer-events:none;transition:all .2s;}.a365-toast.on{opacity:1;transform:translate(-50%,0);}
 
 @media(prefers-reduced-motion:reduce){.a365-panel,.pop,.a365-loading{animation:none;}.a365-abub,.a365-toast,.a365-switch i{transition:none;}}
+
+/* header features: search, copilot, shell, panes */
+.a365-orgbtn{height:40px;padding:0 10px;border:0;background:transparent;color:#fff;font-size:12px;}.a365-orgbtn:hover{background:#2b2b2b;}
+.a365-gsearch{position:relative;}.a365-gdrop{position:absolute;top:38px;left:0;right:0;z-index:80;max-height:380px;overflow:auto;padding:6px;border:1px solid var(--a-line);border-radius:8px;background:var(--a-surface);color:var(--a-text);box-shadow:0 12px 32px #0003;}.a365-gdrop[hidden]{display:none;}
+.a365-ghead{display:block;padding:6px 8px;color:var(--a-muted);font-size:11px;font-weight:600;}.a365-gnone{padding:14px 10px;color:var(--a-muted);}
+.a365-gres{display:flex;align-items:flex-start;gap:12px;width:100%;padding:8px 10px;border:0;border-radius:4px;background:transparent;text-align:left;}.a365-gres:hover,.a365-gres.sel{background:var(--a-hover);}.a365-gres>i{width:18px;margin-top:3px;color:var(--a-brand);}.a365-gres small{display:block;color:var(--a-muted);font-size:11px;}
+.a365-menu button.read{color:var(--a-muted);}.a365-menu button span{flex:1;}.a365-menu button.a365-menulink{justify-content:center;color:var(--a-brand);}
+.a365-ni.active{background:var(--a-hover);font-weight:600;}
+.a365-side{z-index:49;}
+.a365-chat{display:flex;flex-direction:column;gap:10px;}.a365-msg{max-width:94%;padding:10px 12px;border-radius:10px;font-size:13px;}.a365-msg p{margin:0;}.a365-msg.user{align-self:flex-end;background:var(--a-brand);color:#fff;}.a365-msg.bot{align-self:flex-start;border:1px solid var(--a-line);background:var(--a-bg);}.a365-msg ul{margin:6px 0 0;padding-left:18px;}.a365-msg li{margin:3px 0;}
+.a365-acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}.a365-acts.col{flex-direction:column;align-items:flex-start;}
+.a365-chip2{padding:6px 10px;border:1px solid var(--a-line);border-radius:14px;background:var(--a-surface);text-align:left;font-size:12px;}.a365-chip2:hover{border-color:var(--a-brand);background:var(--a-soft);}
+.a365-chatform{display:flex;gap:8px;padding:10px 16px;border-top:1px solid var(--a-line);}.a365-chatform input{flex:1;height:36px;padding:0 12px;border:1px solid var(--a-line);border-radius:6px;background:var(--a-surface);color:var(--a-text);}.a365-chatnote{margin:0;padding:0 16px 12px;}
+.a365-dots{display:inline-flex;gap:4px;}.a365-dots i{width:6px;height:6px;border-radius:50%;background:var(--a-muted);animation:a365-bounce 1s infinite ease-in-out;}.a365-dots i:nth-child(2){animation-delay:.15s;}.a365-dots i:nth-child(3){animation-delay:.3s;}@keyframes a365-bounce{0%,80%,100%{opacity:.3}40%{opacity:1}}
+.a365-shell{position:fixed;left:0;right:0;bottom:0;z-index:48;display:flex;flex-direction:column;height:300px;border-top:3px solid var(--a-brand);background:#0c0c0c;color:#e6e6e6;font:13px/1.5 Consolas,'Cascadia Mono',monospace;}
+.a365-shell header{display:flex;align-items:center;justify-content:space-between;padding:4px 12px;background:#1b1b1b;font:12px 'Segoe UI',sans-serif;}.a365-shell header button{width:28px;height:28px;border:0;background:transparent;color:#e6e6e6;}.a365-shell header button:hover{background:#333;}
+.a365-shell-out{flex:1;margin:0;padding:10px 14px;overflow:auto;white-space:pre-wrap;word-break:break-word;font:inherit;}.a365-shell-in{display:flex;gap:8px;padding:6px 14px 10px;}.a365-shell-in span{color:#6fd3c9;white-space:nowrap;}.a365-shell-in input{flex:1;min-width:0;border:0;outline:0;background:transparent;color:inherit;font:inherit;}
+.a365-scroll.shellopen{padding-bottom:300px;}
+.a365-homegrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;}.a365-kpis{display:flex;gap:22px;margin:8px 0;}.a365-kpis b{display:block;font-size:24px;font-weight:600;}.a365-kpis span{color:var(--a-muted);font-size:12px;}
+.a365-helpsearch{width:100%;margin:0 0 10px;}.a365-helplist a{color:var(--a-brand);text-decoration:none;}.a365-helplist a:hover{text-decoration:underline;}.a365-helplist i{font-size:10px;margin-left:4px;}
+.a365-rate{display:flex;gap:8px;margin-bottom:12px;}.a365-rate button{padding:8px 12px;border:1px solid var(--a-line);border-radius:6px;background:var(--a-surface);}.a365-rate button.on{border-color:var(--a-brand);background:var(--a-soft);}
+.a365-field textarea{padding:8px;border:1px solid var(--a-line);border-radius:4px;background:var(--a-surface);color:var(--a-text);font:inherit;resize:vertical;}
+.a365-reduce *,.a365-reduce *:before,.a365-reduce *:after{animation:none!important;transition:none!important;}

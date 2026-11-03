@@ -17,9 +17,11 @@ const Agent365UI = (() => {
   const WRITE_NOTE = 'Requires the AI Administrator or Global Administrator role';
   const PAGE_SIZE = 50;
   const NOT_DEMO = 'This area of the admin center isn’t part of the Agent 365 demo.';
+  const Shell = Agent365Shell;
+  const SHELL_BANNER = ['Cloud Shell (simulated) · PowerShell-style prompt', 'Sample data only. No Microsoft Graph connection. Type help for commands.'];
 
-  let root = null, store = null, st = null, toastTimer = null, popNow = false, showLoader = false, drag = null;
-  const fresh = () => ({ page: 'overview', tab: 'registry', filters: {}, card: '', sort: { key: 'name', dir: 'asc' }, pageNo: 0, cols: { status: 1, publisher: 1, platform: 1, owner: 1, channels: 0, risks: 1, version: 0, modified: 1 }, compact: false, panel: null, selected: null, paneTab: 'details', openRisk: 'High', single: null, mapNode: null, cluster: null, zoom: 1, pan: [0, 0], mapFilters: false, mapFull: false, pop: null, maxPer: 16, mapLoad: false, anim: false, fitPending: false, menu: null, navCollapsed: false, agentsOpen: true, resetScroll: true, role: 'ai-admin', dialog: null, wizard: { step: 0, uploaded: false, publish: 'Everyone in the organization', deploy: 'No one yet', template: 'Standard protection' }, toast: '' });
+  let root = null, store = null, st = null, toastTimer = null, chatTimer = null, popNow = false, showLoader = false, drag = null;
+  const fresh = () => ({ page: 'overview', tab: 'registry', filters: {}, card: '', sort: { key: 'name', dir: 'asc' }, pageNo: 0, cols: { status: 1, publisher: 1, platform: 1, owner: 1, channels: 0, risks: 1, version: 0, modified: 1 }, compact: false, panel: null, selected: null, paneTab: 'details', openRisk: 'High', single: null, mapNode: null, cluster: null, zoom: 1, pan: [0, 0], mapFilters: false, mapFull: false, pop: null, maxPer: 16, mapLoad: false, anim: false, fitPending: false, menu: null, navCollapsed: false, agentsOpen: true, side: null, gq: '', gopen: false, gsel: -1, gres: [], chat: [], thinking: false, notesRead: {}, shell: { open: false, lines: [...SHELL_BANNER], hist: [], hi: -1 }, navOpen: {}, showAll: false, hiddenNav: [], reduce: false, report: '', helpQ: '', rate: 1, stub: null, resetScroll: true, role: 'ai-admin', dialog: null, wizard: { step: 0, uploaded: false, publish: 'Everyone in the organization', deploy: 'No one yet', template: 'Standard protection' }, toast: '' });
   const can = () => st.role === 'ai-admin';
 
   const statusBadge = status => `<span class="a365-status ${status.toLowerCase().replace(/\s+/g, '-')}"><i></i>${esc(status)}</span>`;
@@ -61,34 +63,42 @@ const Agent365UI = (() => {
     if (!st.menu) return '';
     const shade = '<div class="a365-menushade" data-a365-menu-close></div>';
     if (st.menu === 'waffle') return `${shade}<div class="a365-menu left" role="menu" aria-label="Apps"><strong>Switch workspace</strong>${[['overview', 'fa-house', 'atQor security overview'], ['defender', 'fa-shield-halved', 'Microsoft Defender'], ['intune', 'fa-laptop', 'Microsoft Intune'], ['entra', 'fa-fingerprint', 'Microsoft Entra'], ['purview', 'fa-eye', 'Microsoft Purview'], ['copilot', 'fa-wand-magic-sparkles', 'Security Copilot']].map(([view, glyph, text]) => `<button role="menuitem" data-view="${view}">${icon(glyph)} ${text}</button>`).join('')}</div>`;
-    if (st.menu === 'bell') { const s = store.summary(); return `${shade}<div class="a365-menu right" role="menu" aria-label="Notifications"><strong>Notifications</strong><button role="menuitem" data-a365-go="requests">${icon('fa-inbox')} ${s.pending} agent requests are waiting for approval</button><button role="menuitem" data-a365-go="risk">${icon('fa-triangle-exclamation')} ${fmt(s.atRisk)} agents have risk signals</button><button role="menuitem" data-a365-go="ownerless">${icon('fa-user-slash')} ${fmt(s.ownerless)} agents have no owner</button></div>`; }
-    return `${shade}<div class="a365-menu right account" role="dialog" aria-label="Account"><div class="a365-acct"><span class="a365-avatar big">PS</span><div><strong>Priya Shah</strong><small>priya.shah@contoso.com</small></div></div><span class="a365-menulabel">Viewing as</span><button role="menuitemradio" aria-checked="${can()}" data-a365-setrole="ai-admin">${icon(can() ? 'fa-circle-dot' : 'fa-circle')} AI Administrator</button><button role="menuitemradio" aria-checked="${!can()}" data-a365-setrole="reader">${icon(can() ? 'fa-circle' : 'fa-circle-dot')} Global Reader (view only)</button><p>Sample data. No tenant connection and nothing is signed in.</p></div>`;
+    if (st.menu === 'bell') { const list = Shell.notifications(store); return `${shade}<div class="a365-menu right" role="menu" aria-label="Notifications"><strong>Notifications</strong>${list.map(item => `<button role="menuitem" class="${st.notesRead[item.id] || item.info ? 'read' : ''}" data-a365-note="${item.id}" data-a365-notego="${item.go}">${icon(item.icon)} <span>${esc(item.text)}</span></button>`).join('')}<button class="a365-menulink" data-a365-readall>Mark all as read</button></div>`; }
+    return `${shade}<div class="a365-menu right account" role="dialog" aria-label="Account"><div class="a365-acct"><span class="a365-avatar big">PS</span><div><strong>Priya Shah</strong><small>priya.shah@contoso.com</small></div></div><span class="a365-menulabel">Viewing as</span><button role="menuitemradio" aria-checked="${can()}" data-a365-setrole="ai-admin">${icon(can() ? 'fa-circle-dot' : 'fa-circle')} AI Administrator</button><button role="menuitemradio" aria-checked="${!can()}" data-a365-setrole="reader">${icon(can() ? 'fa-circle' : 'fa-circle-dot')} Global Reader (view only)</button><button role="menuitem" data-a365-dialog="tenant">${icon('fa-building')} Organization information</button><button role="menuitem" data-view="overview">${icon('fa-right-from-bracket')} Sign out</button><p>Sample data. No tenant connection and nothing is signed in.</p></div>`;
+  }
+  function searchDropHtml() {
+    const results = Shell.search(store, st.gq); st.gres = results;
+    if (!results.length) return `<div class="a365-gnone">No results for “${esc(st.gq)}”</div>`;
+    return `<strong class="a365-ghead">${st.gq ? 'Results' : 'Suggested'}</strong>${results.map((item, index) => `<button type="button" role="option" class="a365-gres ${index === st.gsel ? 'sel' : ''}" aria-selected="${index === st.gsel}" data-a365-sr="${item.kind}|${esc(item.target)}">${icon(item.icon)}<span><b>${esc(item.title)}</b><small>${esc(item.sub)}</small></span></button>`).join('')}`;
   }
   function topbarHtml() {
-    const tb = (glyph, name) => `<button class="a365-ticon" data-a365-toast="${name} isn’t part of this demo." aria-label="${name}" title="${name}">${icon(glyph)}</button>`;
-    const dark = document.body.classList.contains('dark');
+    const tb = (glyph, name, attr) => `<button class="a365-ticon" ${attr} aria-label="${name}" title="${name}">${icon(glyph)}</button>`;
+    const dark = document.body.classList.contains('dark'), news = Shell.notifications(store).filter(item => !item.info && !st.notesRead[item.id]).length;
     return `<header class="a365-top"><button class="a365-waffle" data-a365-menu="waffle" aria-label="App launcher" aria-expanded="${st.menu === 'waffle'}">${icon('fa-grip')}</button><span class="a365-brand">Microsoft 365 admin center</span>
-      <form class="a365-gsearch" data-a365-gsearch role="search">${icon('fa-magnifying-glass')}<input name="q" placeholder="Search" aria-label="Search agents" autocomplete="off"></form>
-      <div class="a365-topright"><button class="a365-tcopilot" data-a365-toast="Copilot in the admin center isn’t part of this demo.">${mark('studio', 18)} Copilot</button><span class="a365-vsep"></span>${tb('fa-terminal', 'Cloud Shell')}${tb('fa-file-lines', 'Reports')}<button class="a365-ticon" data-a365-theme aria-label="Switch theme" title="Switch theme">${icon(dark ? 'fa-sun' : 'fa-moon')}</button><button class="a365-ticon a365-bell" data-a365-menu="bell" aria-label="Notifications, 3 new" aria-expanded="${st.menu === 'bell'}">${icon('fa-bell')}<em>3</em></button><span class="a365-vsep"></span><span class="a365-orgname">Contoso</span>${tb('fa-gear', 'Settings')}${tb('fa-circle-question', 'Help')}<button class="a365-avatar" data-a365-menu="avatar" aria-label="Account: Priya Shah" aria-expanded="${st.menu === 'avatar'}">PS</button></div></header>`;
+      <form class="a365-gsearch" data-a365-gsearch role="search">${icon('fa-magnifying-glass')}<input id="a365-gq" name="q" value="${esc(st.gq)}" placeholder="Search" aria-label="Search agents, pages and actions" aria-controls="a365-gdrop" autocomplete="off"><div class="a365-gdrop" id="a365-gdrop" role="listbox" ${st.gopen ? '' : 'hidden'}>${st.gopen ? searchDropHtml() : ''}</div></form>
+      <div class="a365-topright"><button class="a365-tcopilot" data-a365-side="copilot" aria-expanded="${st.side === 'copilot'}">${mark('studio', 18)} Copilot</button><span class="a365-vsep"></span>${tb('fa-terminal', 'Cloud Shell', `data-a365-shell aria-expanded="${st.shell.open}"`)}${tb('fa-file-lines', 'Reports', `data-a365-side="reports" aria-expanded="${st.side === 'reports'}"`)}${tb(dark ? 'fa-sun' : 'fa-moon', 'Switch theme', 'data-a365-theme')}<button class="a365-ticon a365-bell" data-a365-menu="bell" aria-label="Notifications, ${news} new" aria-expanded="${st.menu === 'bell'}">${icon('fa-bell')}${news ? `<em>${news}</em>` : ''}</button><span class="a365-vsep"></span><button class="a365-orgbtn" data-a365-dialog="tenant">Contoso</button>${tb('fa-gear', 'Settings', `data-a365-side="settings" aria-expanded="${st.side === 'settings'}"`)}${tb('fa-circle-question', 'Help', `data-a365-side="help" aria-expanded="${st.side === 'help'}"`)}<button class="a365-avatar" data-a365-menu="avatar" aria-label="Account: Priya Shah" aria-expanded="${st.menu === 'avatar'}">PS</button></div></header>`;
   }
   function navHtml() {
-    const row = (glyph, text, extra = '', attrs = '') => `<button class="a365-ni" ${attrs}>${icon(glyph)}<span>${text}</span>${extra}</button>`;
-    const stub = (glyph, text, chevron) => row(glyph, text, chevron ? icon('fa-chevron-down') : '', `data-a365-toast="${NOT_DEMO}"`);
-    const child = (page, text) => `<button class="a365-nc ${st.page === page ? 'active' : ''}" data-a365-page="${page}" ${st.page === page ? 'aria-current="page"' : ''}>${text}</button>`;
-    const kids = [['overview', 'Overview'], ['registry', 'All agents'], ['map', 'Agent map'], ['deleted', 'Deleted agents'], ['shadow', 'Shadow AI'], ['tools', 'Tools'], ['settings', 'Settings']];
-    return `<nav class="a365-nav ${st.navCollapsed ? 'collapsed' : ''}" aria-label="Admin center navigation"><button class="a365-ni a365-burger" data-a365-navtoggle aria-label="Collapse navigation" aria-expanded="${!st.navCollapsed}">${icon('fa-bars')}</button>
-      ${stub('fa-house', 'Home')}${stub('fa-user', 'Users', 1)}${stub('fa-wand-magic-sparkles', 'Copilot', 1)}
-      ${row('fa-robot', 'Agents', icon(st.agentsOpen ? 'fa-chevron-up' : 'fa-chevron-down'), `data-a365-agents aria-expanded="${st.agentsOpen}"`)}
-      ${st.agentsOpen && !st.navCollapsed ? `<div class="a365-kids">${kids.map(([page, text]) => child(page, text)).join('')}</div>` : ''}
-      ${stub('fa-table-cells-large', 'Apps', 1)}${stub('fa-people-group', 'Teams &amp; groups', 1)}${stub('fa-cube', 'Resources', 1)}${stub('fa-bag-shopping', 'Marketplace')}${stub('fa-gear', 'Settings', 1)}${stub('fa-wrench', 'Setup', 1)}
-      <hr>${stub('fa-pen', 'Customize navigation')}${stub('fa-ellipsis', 'Show all')}</nav>`;
+    const hidden = new Set(st.hiddenNav), kidsOf = [['overview', 'Overview'], ['registry', 'All agents'], ['map', 'Agent map'], ['deleted', 'Deleted agents'], ['shadow', 'Shadow AI'], ['tools', 'Tools'], ['settings', 'Settings']];
+    const row = (glyph, text, extra = '', attrs = '', active = false) => `<button class="a365-ni ${active ? 'active' : ''}" ${attrs}>${icon(glyph)}<span>${text}</span>${extra}</button>`;
+    const child = (attrs, text, active) => `<button class="a365-nc ${active ? 'active' : ''}" ${attrs} ${active ? 'aria-current="page"' : ''}>${text}</button>`;
+    const parts = Shell.NAV_GROUPS.filter(group => st.showAll || !hidden.has(group.id)).map(group => {
+      const label = group.label.replace('&', '&amp;');
+      if (group.page) return row(group.icon, label, '', 'data-a365-page="home"', st.page === 'home');
+      if (group.real) return `${row(group.icon, label, icon(st.agentsOpen ? 'fa-chevron-up' : 'fa-chevron-down'), `data-a365-agents aria-expanded="${st.agentsOpen}"`)}${st.agentsOpen && !st.navCollapsed ? `<div class="a365-kids">${kidsOf.map(([page, text]) => child(`data-a365-page="${page}"`, text, st.page === page)).join('')}</div>` : ''}`;
+      if (!group.kids.length) return row(group.icon, label, '', `data-a365-stub="${group.label}|${group.label}"`, st.page === 'stub' && st.stub?.name === group.label);
+      const open = Boolean(st.navOpen[group.id]);
+      return `${row(group.icon, label, icon(open ? 'fa-chevron-up' : 'fa-chevron-down'), `data-a365-ngroup="${group.id}" aria-expanded="${open}"`)}${open && !st.navCollapsed ? `<div class="a365-kids">${group.kids.map(kid => child(`data-a365-stub="${group.label}|${kid}"`, kid.replace('&', '&amp;'), st.page === 'stub' && st.stub?.group === group.label && st.stub?.name === kid)).join('')}</div>` : ''}`;
+    });
+    return `<nav class="a365-nav ${st.navCollapsed ? 'collapsed' : ''}" aria-label="Admin center navigation"><button class="a365-ni a365-burger" data-a365-navtoggle aria-label="Collapse navigation" aria-expanded="${!st.navCollapsed}">${icon('fa-bars')}</button>${parts.join('')}
+      <hr>${row('fa-pen', 'Customize navigation', '', 'data-a365-dialog="navcustom"')}${row('fa-ellipsis', st.showAll ? 'Show fewer' : 'Show all', '', `data-a365-showall aria-pressed="${st.showAll}"`)}</nav>`;
   }
   function pageHeadHtml() {
-    const names = { overview: ['Overview', 'Agent overview'], registry: ['All agents', 'All agents'], map: ['Agent map', 'Agent map'], deleted: ['Deleted agents', 'Deleted agents'], shadow: ['Shadow AI', 'Shadow AI'], tools: ['Tools', 'Tools'], settings: ['Settings', 'Agent settings'] };
+    const names = { home: ['Home', 'Home'], stub: [st.stub?.group || 'Home', st.stub?.name || ''], overview: ['Overview', 'Agent overview'], registry: ['All agents', 'All agents'], map: ['Agent map', 'Agent map'], deleted: ['Deleted agents', 'Deleted agents'], shadow: ['Shadow AI', 'Shadow AI'], tools: ['Tools', 'Tools'], settings: ['Settings', 'Agent settings'] };
     const ledes = { map: 'Visualize how agents are distributed across platforms. Explore connections, filter by status, and zoom into specific clusters to understand your agent ecosystem. <a href="https://learn.microsoft.com/en-us/microsoft-365/admin/manage/agent-map" target="_blank" rel="noopener noreferrer">Learn more.</a>', shadow: 'Agents found outside Agent 365 through registry sync, without its risk protection and observability.', tools: 'Connectors and MCP servers that your agents call, with exception rates from Agent 365 observability data.' };
     const [crumb, heading] = names[st.page];
     const badge = ['map', 'shadow', 'tools', 'overview'].includes(st.page) ? `<span class="a365-chip"><svg viewBox="0 0 32 32" width="16" height="16" aria-hidden="true">${MARKS.foundry}</svg> Agent 365</span>` : '';
-    return `<div class="a365-pagehead"><div class="a365-crumbs"><button data-a365-toast="${NOT_DEMO}">Home</button>${icon('fa-chevron-right')}<span>${crumb}</span></div><div class="a365-titlerow"><h1>${heading}</h1>${badge}<span class="a365-sim">${icon('fa-flask')} Sample data</span></div>${ledes[st.page] ? `<p class="a365-lede">${ledes[st.page]}</p>` : ''}</div>`;
+    return `<div class="a365-pagehead"><div class="a365-crumbs"><button data-a365-page="home">Home</button>${icon('fa-chevron-right')}<span>${crumb}</span></div><div class="a365-titlerow"><h1>${heading}</h1>${badge}<span class="a365-sim">${icon('fa-flask')} Sample data</span></div>${ledes[st.page] ? `<p class="a365-lede">${ledes[st.page]}</p>` : ''}</div>`;
   }
 
   /* ---------- overview ---------- */
@@ -313,6 +323,9 @@ const Agent365UI = (() => {
       return wrap(`${{ block: 'Block', delete: 'Delete', remove: 'Remove' }[d.action]} this agent?`, `<p>${copy}</p><p class="a365-muted">Demo only: nothing changes in a tenant.</p>`, `<button class="a365-btn danger" data-a365-confirm>${{ block: 'Block', delete: 'Delete', remove: 'Remove' }[d.action]}</button><button class="a365-btn" data-a365-dialog-close>Cancel</button>`);
     }
     if (d.type === 'columns') return wrap('Customize view', `<p>Choose the columns shown in the agent list. Name is always shown.</p><div class="a365-checks">${COLS.map(([key, name]) => `<label><input type="checkbox" data-a365-col="${key}" ${st.cols[key] ? 'checked' : ''}> ${name}</label>`).join('')}</div>`, `<button class="a365-btn primary" data-a365-dialog-close>Done</button>`);
+    if (d.type === 'feedback') return wrap('Give feedback', `<p>Tell us how this page works for you.</p><div class="a365-rate" role="radiogroup" aria-label="Rating">${[['fa-face-frown', 'Not great'], ['fa-face-meh', 'Okay'], ['fa-face-smile', 'Good']].map(([glyph, text], index) => `<button role="radio" aria-checked="${st.rate === index}" class="${st.rate === index ? 'on' : ''}" data-a365-rate="${index}">${icon(glyph)} ${text}</button>`).join('')}</div><label class="a365-field">Comments<textarea id="a365-fb" rows="4"></textarea></label><p class="a365-muted">Demo only: feedback isn’t sent anywhere.</p>`, `<button class="a365-btn primary" data-a365-fb-send>Send</button><button class="a365-btn" data-a365-dialog-close>Cancel</button>`);
+    if (d.type === 'tenant') return wrap('Organization information', `<dl class="a365-facts">${fact('Organization', 'Contoso (fictional)')}${fact('Domain', 'contoso.onmicrosoft.com')}${fact('Data', 'Local sample data, snapshot Nov 2, 2026')}${fact('Sample license', 'Microsoft 365 E7')}${fact('Signed-in persona', 'Priya Shah')}</dl><p class="a365-muted">Check your real entitlements in Billing before relying on any capability shown here.</p>`, `<button class="a365-btn primary" data-a365-dialog-close>Close</button>`);
+    if (d.type === 'navcustom') return wrap('Customize navigation', `<p>Choose which items appear in the left navigation. Use Show all to see hidden items again.</p><div class="a365-checks">${Shell.NAV_GROUPS.map(group => `<label><input type="checkbox" data-a365-navvis="${group.id}" ${st.hiddenNav.includes(group.id) ? '' : 'checked'} ${group.id === 'home' || group.id === 'agents' ? 'disabled' : ''}> ${group.label}</label>`).join('')}</div>`, `<button class="a365-btn primary" data-a365-dialog-close>Done</button>`);
     if (d.type === 'wizard') return wizardDialog(wrap);
     return '';
   }
@@ -332,23 +345,100 @@ const Agent365UI = (() => {
   }
 
   /* ---------- rendering and events ---------- */
-  const PAGES = { overview: overviewHtml, registry: registryHtml, map: mapPageHtml, deleted: deletedHtml, shadow: shadowHtml, tools: toolsHtml, settings: settingsHtml };
+  /* ---------- home, placeholder pages, side panes and Cloud Shell ---------- */
+  function homeHtml() {
+    const s = store.summary(), requests = store.requests(), log = store.log().slice(0, 5);
+    return `<div class="a365-homegrid"><article class="a365-card"><h3>Agents</h3><p>${fmt(s.total)} agents are in your registry.</p><div class="a365-kpis"><span><b>${fmt(s.atRisk)}</b> at risk</span><span><b>${fmt(s.ownerless)}</b> no owner</span><span><b>${fmt(s.unmanaged)}</b> unmanaged</span></div><button class="a365-link" data-a365-page="overview">Open agent overview ${icon('fa-arrow-right')}</button></article>
+      <article class="a365-card"><h3>Agent requests</h3>${requests.length ? `<ul class="a365-plain">${requests.map(item => `<li><span>${esc(item.agentName)}<small>${esc(item.requestedBy)} · ${esc(item.scope)}</small></span></li>`).join('')}</ul>` : '<p class="a365-muted">No requests are waiting for approval.</p>'}<button class="a365-link" data-a365-go="requests">Manage requests ${icon('fa-arrow-right')}</button></article>
+      <article class="a365-card"><h3>Quick links</h3><ul class="a365-plain">${Shell.PAGES.slice(2).map(([page, title, glyph]) => `<li><button class="a365-name" data-a365-page="${page}">${icon(glyph)} <b>${title}</b></button></li>`).join('')}</ul></article>
+      <article class="a365-card"><h3>Recent admin actions</h3>${log.length ? `<ul class="a365-plain">${log.map(item => `<li><span>${esc(item.agent)}: ${esc(item.action)}<small>${esc(item.time)}</small></span></li>`).join('')}</ul>` : '<p class="a365-muted">No actions in this session yet. Block, approve or assign an agent to see entries here.</p>'}</article></div>`;
+  }
+  const stubHtml = () => `<div class="a365-empty">${icon('fa-circle-info')}<strong>${esc(st.stub?.name || '')} isn’t part of this demo</strong><span>This sample only includes the Agent 365 pages under Agents.</span><button class="a365-btn primary" data-a365-page="map">Open Agent map</button></div>`;
+  const sideHead = (glyph, title, sub) => `<header><div class="a365-phead">${glyph}<div><h2 id="a365-ptitle" tabindex="-1">${title}</h2><span>${sub}</span></div></div><button class="a365-x" data-a365-side-close aria-label="Close">${icon('fa-xmark')}</button></header>`;
+  function copilotPane() {
+    const messages = st.chat.map(message => message.role === 'user' ? `<div class="a365-msg user">${esc(message.text)}</div>` : `<div class="a365-msg bot"><p>${esc(message.text)}</p>${message.list?.length ? `<ul>${message.list.map(line => `<li>${message.suggest ? `<button class="a365-chip2" data-a365-prompt="${esc(line)}">${esc(line)}</button>` : esc(line)}</li>`).join('')}</ul>` : ''}${message.actions?.length ? `<div class="a365-acts">${message.actions.map(action => `<button class="a365-btn" data-a365-go="${action.go}">${icon('fa-arrow-right')} ${esc(action.label)}</button>`).join('')}</div>` : ''}</div>`).join('');
+    const welcome = st.chat.length ? '' : `<div class="a365-msg bot"><p>Hi Priya. Ask me about the agents in this sample environment.</p><div class="a365-acts col">${Shell.COPILOT_PROMPTS.map(prompt => `<button class="a365-chip2" data-a365-prompt="${esc(prompt)}">${esc(prompt)}</button>`).join('')}</div></div>`;
+    return `${sideHead(mark('studio', 28), 'Copilot', 'Scripted assistant · sample data')}<div class="a365-pbody a365-chat">${welcome}${messages}${st.thinking ? '<div class="a365-msg bot"><span class="a365-dots"><i></i><i></i><i></i></span></div>' : ''}</div><form class="a365-chatform" data-a365-chat><input id="a365-chat-in" placeholder="Ask about your agents" aria-label="Ask Copilot" autocomplete="off"><button class="a365-btn primary" aria-label="Send">${icon('fa-paper-plane')}</button></form><p class="a365-disc a365-chatnote">Answers come from the sample data with fixed rules, not from an AI model.</p>`;
+  }
+  function reportsPane() {
+    const report = Shell.usageReport(store, st.report);
+    return `${sideHead(`<span class="a365-ava org">${icon('fa-file-lines')}</span>`, 'Agent usage report', 'Last 30 days · sample data')}<div class="a365-pbody"><label class="a365-field">Publisher type<select data-a365-reportpub><option value="">All</option>${['Microsoft', 'Third party', 'Your org', 'Your users'].map(name => `<option value="${name}" ${st.report === name ? 'selected' : ''}>${label(name)}</option>`).join('')}</select></label>
+      <dl class="a365-facts">${fact('Agents with activity', fmt(report.count))}${fact('Active users (sum)', fmt(report.users))}${fact('Sessions', fmt(report.sessions))}${fact('Assisted hours', fmt(report.hours))}${fact('Agents above 1% exceptions', fmt(report.exceptions))}</dl><h4>Most used agents</h4><table class="a365-mini"><thead><tr><th>Agent</th><th>Users</th><th>Sessions</th></tr></thead><tbody>${report.rows.map(agent => `<tr><td><button class="a365-name" data-a365-open="${agent.id}"><b>${esc(agent.name)}</b></button></td><td>${fmt(agent.activity.activeUsers)}</td><td>${fmt(agent.activity.sessions)}</td></tr>`).join('')}</tbody></table><p><button class="a365-btn" data-a365-report-export>${icon('fa-file-export')} Export usage as CSV</button></p></div>`;
+  }
+  function settingsPane() {
+    const dark = document.body.classList.contains('dark');
+    const row = (key, name, note, on) => `<div class="a365-rule"><div><strong>${name}</strong><span>${note}</span></div><button class="a365-switch ${on ? 'on' : ''}" role="switch" aria-checked="${on}" aria-label="${name}" data-a365-pref="${key}"><i></i></button></div>`;
+    return `${sideHead(`<span class="a365-ava org">${icon('fa-gear')}</span>`, 'Settings', 'Applies to this demo session')}<div class="a365-pbody"><div class="a365-rules">${row('dark', 'Dark mode', 'Switch the whole demo between light and dark.', dark)}${row('compact', 'Compact lists', 'Tighter rows in the agent registry.', st.compact)}${row('nav', 'Collapse navigation', 'Show icons only in the left navigation.', st.navCollapsed)}${row('reduce', 'Reduce motion', 'Turn off animations and transitions.', st.reduce)}</div><p class="a365-disc">Language and region follow your browser in this demo.</p></div>`;
+  }
+  function helpList() {
+    const q = st.helpQ.toLowerCase(), topics = Shell.HELP.filter(topic => !q || `${topic[0]} ${topic[1]}`.toLowerCase().includes(q));
+    return topics.length ? `<ul class="a365-plain a365-helplist">${topics.map(([title, note, url]) => `<li><span><a href="${url}" target="_blank" rel="noopener noreferrer">${esc(title)} ${icon('fa-arrow-up-right-from-square')}</a><small>${esc(note)}</small></span></li>`).join('')}</ul>` : '<p class="a365-muted">No help topics match your search.</p>';
+  }
+  function helpPane() {
+    return `${sideHead(`<span class="a365-ava org">${icon('fa-circle-question')}</span>`, 'Help', 'Microsoft Learn links and shortcuts')}<div class="a365-pbody"><label class="a365-search a365-helpsearch">${icon('fa-magnifying-glass')}<input id="a365-help-q" value="${esc(st.helpQ)}" placeholder="Search help" aria-label="Search help" autocomplete="off"></label><div id="a365-helplist">${helpList()}</div><h4>Keyboard shortcuts</h4><ul class="a365-plain">${Shell.KEYS.map(([key, text]) => `<li>${text}<b>${key}</b></li>`).join('')}</ul><p><button class="a365-btn" data-a365-dialog="feedback">${icon('fa-message')} Give feedback</button></p><p class="a365-disc">Links open official Microsoft documentation in a new tab. Contacting support isn’t part of this demo.</p></div>`;
+  }
+  function sideHtml() {
+    if (!st.side) return '';
+    const body = { copilot: copilotPane, reports: reportsPane, settings: settingsPane, help: helpPane }[st.side]();
+    return `<div class="a365-shade" data-a365-side-close></div><aside class="a365-panel a365-side" role="dialog" aria-modal="false" aria-labelledby="a365-ptitle">${body}</aside>`;
+  }
+  function shellHtml() {
+    if (!st.shell.open) return '';
+    return `<section class="a365-shell" role="region" aria-label="Cloud Shell"><header><span>${icon('fa-terminal')} Cloud Shell · PowerShell (simulated)</span><div><button data-a365-shell-clear aria-label="Clear output" title="Clear output">${icon('fa-broom')}</button><button data-a365-shell-close aria-label="Close Cloud Shell" title="Close">${icon('fa-xmark')}</button></div></header><pre class="a365-shell-out" tabindex="0">${esc(st.shell.lines.join('\n'))}</pre><label class="a365-shell-in"><span>PS /home/priya&gt;</span><input id="a365-shell-in" autocomplete="off" spellcheck="false" aria-label="Shell command"></label></section>`;
+  }
+  const PAGES = { home: homeHtml, stub: stubHtml, overview: overviewHtml, registry: registryHtml, map: mapPageHtml, deleted: deletedHtml, shadow: shadowHtml, tools: toolsHtml, settings: settingsHtml };
   function render(focus = '') {
     if (!root?.isConnected) return;
     popNow = st.anim; st.anim = false; showLoader = st.mapLoad; st.mapLoad = false;
     const scroller = root.querySelector('.a365-scroll'), keep = scroller && !st.resetScroll ? scroller.scrollTop : 0;
     st.resetScroll = false;
-    root.className = 'a365-root';
-    root.innerHTML = `${DEFS}<div class="a365">${topbarHtml()}<div class="a365-body">${navHtml()}<main class="a365-scroll" id="a365-main" tabindex="-1">${pageHeadHtml()}<div class="a365-content">${PAGES[st.page]()}</div></main></div>${panelHtml()}${dialogHtml()}${menuHtml()}<div class="a365-assist" aria-label="Help"><button data-a365-toast="Help and support isn’t part of this demo." aria-label="Help and support">${icon('fa-headset')}</button><button data-a365-toast="Feedback isn’t part of this demo." aria-label="Give feedback">${icon('fa-message')}</button></div><div class="a365-toast ${st.toast ? 'on' : ''}" role="status" aria-live="polite">${esc(st.toast)}</div></div>`;
+    if (st.panel && st.side) st.side = null;
+    root.className = `a365-root${st.reduce ? ' a365-reduce' : ''}`;
+    root.innerHTML = `${DEFS}<div class="a365">${topbarHtml()}<div class="a365-body">${navHtml()}<main class="a365-scroll ${st.shell.open ? 'shellopen' : ''}" id="a365-main" tabindex="-1">${pageHeadHtml()}<div class="a365-content">${PAGES[st.page]()}</div></main></div>${panelHtml()}${sideHtml()}${shellHtml()}${dialogHtml()}${menuHtml()}<div class="a365-assist" aria-label="Help"><button data-a365-side="help" aria-label="Help and support" title="Help and support">${icon('fa-headset')}</button><button data-a365-dialog="feedback" aria-label="Give feedback" title="Give feedback">${icon('fa-message')}</button></div><div class="a365-toast ${st.toast ? 'on' : ''}" role="status" aria-live="polite">${esc(st.toast)}</div></div>`;
     const next = root.querySelector('.a365-scroll'); if (next) next.scrollTop = keep;
+    root.querySelectorAll('.a365-chat, .a365-shell-out').forEach(element => { element.scrollTop = element.scrollHeight; });
     if (focus) root.querySelector(focus)?.focus({ preventScroll: true });
   }
   function refreshList() { const list = root.querySelector('#a365-list'); if (!list) return; list.innerHTML = st.tab === 'registry' ? tableHtml() : requestsHtml(); }
   function toast(message) { st.toast = message; const element = root.querySelector('.a365-toast'); if (element) { element.textContent = message; element.classList.add('on'); } clearTimeout(toastTimer); toastTimer = setTimeout(() => { st.toast = ''; root?.querySelector('.a365-toast')?.classList.remove('on'); }, 4200); }
+  function toggleTheme() {
+    const dark = document.body.classList.toggle('dark');
+    try { localStorage.setItem('security-demo-theme', dark ? 'dark' : 'light'); } catch { /* storage can be blocked */ }
+    const glyph = document.querySelector('#theme-toggle i'); if (glyph) glyph.className = dark ? 'fa-regular fa-sun' : 'fa-regular fa-moon';
+  }
+  function refreshSearch() { const drop = root?.querySelector('.a365-gdrop'); if (!drop) return; drop.hidden = !st.gopen; drop.innerHTML = st.gopen ? searchDropHtml() : ''; }
+  function activateResult(value) {
+    const [kind, ...rest] = value.split('|'), target = rest.join('|');
+    st.gopen = false; st.gq = ''; st.gsel = -1;
+    if (kind === 'agent') { st.selected = target; st.panel = 'agent'; st.paneTab = 'details'; st.side = null; render('#a365-ptitle'); return; }
+    go(target); render('#a365-main');
+  }
+  function askCopilot(text) {
+    const question = text.trim();
+    if (!question) return;
+    st.chat.push({ role: 'user', text: question }); st.thinking = true; render('#a365-chat-in');
+    clearTimeout(chatTimer);
+    chatTimer = setTimeout(() => { if (!root?.isConnected) return; st.chat.push({ role: 'bot', ...Shell.copilot(store, question) }); st.thinking = false; render('#a365-chat-in'); }, 450);
+  }
+  function downloadCsv(name, csv) {
+    const url = URL.createObjectURL(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' }));
+    const anchor = document.createElement('a'); anchor.href = url; anchor.download = name; anchor.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  function runShellLine(value) {
+    const shell = st.shell, line = value.trim();
+    shell.lines.push(`PS /home/priya> ${value}`);
+    if (line) {
+      shell.hist.unshift(line); shell.hi = -1;
+      const result = Shell.runShell(store, line, { can: can() });
+      if (result.clear) shell.lines = []; else shell.lines.push(...result.lines);
+      if (result.download) downloadCsv('contoso-agent-registry-sample.csv', store.exportCsv({}));
+    }
+    render('#a365-shell-in');
+  }
   const closeAll = () => { st.panel = null; st.dialog = null; st.menu = null; };
   function go(target) {
     closeAll(); st.single = null; st.mapNode = null; st.card = ''; st.pageNo = 0; st.resetScroll = true;
-    if (['settings', 'deleted', 'shadow', 'tools', 'overview'].includes(target)) { st.page = target; return; }
+    if (['settings', 'deleted', 'shadow', 'tools', 'overview', 'home'].includes(target)) { st.page = target; return; }
     if (target === 'map') { Object.assign(st, { page: 'map', filters: {}, cluster: null, zoom: 1, pan: [0, 0], mapFilters: false, mapFull: false, pop: null, mapLoad: true, anim: true }); return; }
     if (target === 'registry') { st.page = 'registry'; st.tab = 'registry'; st.filters = {}; return; }
     st.page = 'registry'; st.tab = target === 'requests' ? 'requests' : 'registry'; st.filters = {};
@@ -364,19 +454,37 @@ const Agent365UI = (() => {
     } catch (error) { st.dialog = null; render(); toast(error.message); }
   }
   function onClick(event) {
+    if (st.gopen && !event.target.closest('.a365-gsearch')) { st.gopen = false; refreshSearch(); }
     const t = event.target.closest('[data-a365-node]');
     if (t) { st.mapNode = t.dataset.a365Node; render(); return; }
     const b = event.target.closest('button, .a365-shade, .a365-modalshade, .a365-menushade');
     if (!b || !root.contains(b)) return;
     const d = b.dataset;
     if (d.a365Toast) { toast(d.a365Toast); return; }
+    if (d.a365Sr) { activateResult(d.a365Sr); return; }
+    if (d.a365SideClose !== undefined) { st.side = null; render(); return; }
+    if (d.a365Side) { st.side = st.side === d.a365Side ? null : d.a365Side; st.panel = null; st.menu = null; render(st.side === 'copilot' ? '#a365-chat-in' : st.side ? '#a365-ptitle' : ''); return; }
+    if (d.a365Prompt) { askCopilot(d.a365Prompt); return; }
+    if (d.a365Shell !== undefined) { st.shell.open = !st.shell.open; render(st.shell.open ? '#a365-shell-in' : '[data-a365-shell]'); return; }
+    if (d.a365ShellClose !== undefined) { st.shell.open = false; render('[data-a365-shell]'); return; }
+    if (d.a365ShellClear !== undefined) { st.shell.lines = []; render('#a365-shell-in'); return; }
+    if (d.a365Readall !== undefined) { Shell.notifications(store).forEach(item => { st.notesRead[item.id] = true; }); render(); return; }
+    if (d.a365Note) { st.notesRead[d.a365Note] = true; st.menu = null; go(d.a365Notego); render('#a365-main'); return; }
+    if (d.a365Pref) { const key = d.a365Pref; if (key === 'dark') toggleTheme(); else if (key === 'compact') st.compact = !st.compact; else if (key === 'nav') st.navCollapsed = !st.navCollapsed; else if (key === 'reduce') st.reduce = !st.reduce; render(`[data-a365-pref="${key}"]`); return; }
+    if (d.a365ReportExport !== undefined) { downloadCsv('contoso-agent-usage-sample.csv', Shell.usageCsv(store, st.report)); toast('Exported the usage report as CSV (sample data).'); return; }
+    if (d.a365Dialog) { st.dialog = { type: d.a365Dialog }; st.menu = null; render('#a365-dtitle'); return; }
+    if (d.a365Rate !== undefined) { st.rate = Number(d.a365Rate); render(`[data-a365-rate="${d.a365Rate}"]`); return; }
+    if (d.a365FbSend !== undefined) { st.dialog = null; render(); toast('Thanks. Feedback is not sent anywhere in this demo.'); return; }
+    if (d.a365Stub) { const [group, name] = d.a365Stub.split('|'); closeAll(); st.side = null; st.page = 'stub'; st.stub = { group, name }; st.resetScroll = true; render('#a365-main'); return; }
+    if (d.a365Ngroup) { st.navOpen = { ...st.navOpen, [d.a365Ngroup]: !st.navOpen[d.a365Ngroup] }; st.navCollapsed = false; render(`[data-a365-ngroup="${d.a365Ngroup}"]`); return; }
+    if (d.a365Showall !== undefined) { st.showAll = !st.showAll; render('[data-a365-showall]'); return; }
     if (d.a365MenuClose !== undefined) { st.menu = null; render(); return; }
     if (d.a365Menu) { st.menu = st.menu === d.a365Menu ? null : d.a365Menu; render(); return; }
     if (d.a365Setrole) { st.role = d.a365Setrole; st.menu = null; render(); toast(can() ? 'Viewing as AI Administrator.' : 'Viewing as Global Reader. Actions are disabled.'); return; }
-    if (d.a365Theme !== undefined) { document.querySelector('#theme-toggle')?.click(); render('[data-a365-theme]'); return; }
+    if (d.a365Theme !== undefined) { toggleTheme(); render('[data-a365-theme]'); return; }
     if (d.a365Navtoggle !== undefined) { st.navCollapsed = !st.navCollapsed; render('[data-a365-navtoggle]'); return; }
     if (d.a365Agents !== undefined) { st.agentsOpen = !st.agentsOpen; st.navCollapsed = false; render('[data-a365-agents]'); return; }
-    if (d.a365Page) { go(d.a365Page); render('#a365-main'); return; }
+    if (d.a365Page) { st.side = null; go(d.a365Page); render('#a365-main'); return; }
     if (d.a365Go) { go(d.a365Go); render('#a365-main'); return; }
     if (d.a365Tab) { st.tab = d.a365Tab; st.pageNo = 0; render('.a365-tabs .on'); return; }
     if (d.a365Card !== undefined) { const key = d.a365Card; st.card = st.card === key || key === 'total' ? '' : key; st.filters = st.card ? { ...CARD_FILTERS[st.card] } : {}; st.pageNo = 0; render(`[data-a365-card="${key}"]`); return; }
@@ -446,21 +554,40 @@ const Agent365UI = (() => {
     else if (t.dataset.a365Flag) { const key = t.dataset.a365Flag; st.filters = { ...st.filters, [key]: key === 'risk' ? (t.checked ? 'at-risk' : '') : t.checked }; st.anim = true; render(`[data-a365-flag="${key}"]`); }
     else if (t.dataset.a365Col) { st.cols[t.dataset.a365Col] = t.checked ? 1 : 0; render(`[data-a365-col="${t.dataset.a365Col}"]`); }
     else if (t.dataset.a365Wiz) { st.wizard[t.dataset.a365Wiz] = t.value; }
+    else if (t.dataset.a365Reportpub !== undefined) { st.report = t.value; render('[data-a365-reportpub]'); }
+    else if (t.dataset.a365Navvis) { const id = t.dataset.a365Navvis; st.hiddenNav = t.checked ? st.hiddenNav.filter(item => item !== id) : [...st.hiddenNav, id]; render(`[data-a365-navvis="${id}"]`); }
   }
   function onInput(event) {
+    if (event.target.id === 'a365-gq') { st.gq = event.target.value; st.gopen = true; st.gsel = -1; refreshSearch(); return; }
+    if (event.target.id === 'a365-help-q') { st.helpQ = event.target.value; root.querySelector('#a365-helplist').innerHTML = helpList(); return; }
     if (event.target.id === 'a365-max') { st.maxPer = Number(event.target.value); st.fitPending = true; refreshWorld(); applyView(); return; }
     if (event.target.id !== 'a365-search') return;
     st.filters = { ...st.filters, query: event.target.value }; st.pageNo = 0;
     refreshList();
   }
   function onSubmit(event) {
+    if (event.target.dataset?.a365Chat !== undefined) { event.preventDefault(); const input = root.querySelector('#a365-chat-in'); askCopilot(input.value); return; }
     if (event.target.dataset?.a365Gsearch === undefined) return;
     event.preventDefault();
+    if (st.gsel >= 0 && st.gres[st.gsel]) { const hit = st.gres[st.gsel]; activateResult(`${hit.kind}|${hit.target}`); return; }
     const query = new FormData(event.target).get('q').toString().trim();
+    st.gopen = false; st.gq = '';
     go('registry'); st.filters = query ? { query } : {}; render('#a365-search');
   }
+  function onFocusIn(event) { if (event.target.id === 'a365-gq' && !st.gopen) { st.gopen = true; refreshSearch(); } }
   function onKey(event) {
     if (!root?.isConnected) return;
+    if (event.target.id === 'a365-gq') {
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') { event.preventDefault(); const count = st.gres.length; if (count) { st.gsel = (st.gsel + (event.key === 'ArrowDown' ? 1 : -1) + count) % count; refreshSearch(); } return; }
+      if (event.key === 'Escape') { event.preventDefault(); st.gopen = false; refreshSearch(); return; }
+    }
+    if (event.target.id === 'a365-shell-in') {
+      const shell = st.shell;
+      if (event.key === 'Enter') { event.preventDefault(); runShellLine(event.target.value); return; }
+      if (event.key === 'ArrowUp' || event.key === 'ArrowDown') { event.preventDefault(); shell.hi = event.key === 'ArrowUp' ? Math.min(shell.hist.length - 1, shell.hi + 1) : Math.max(-1, shell.hi - 1); event.target.value = shell.hi >= 0 ? shell.hist[shell.hi] : ''; return; }
+    }
+    if (event.key === '/' && !event.target.closest?.('input, select, textarea')) { event.preventDefault(); root.querySelector('#a365-gq')?.focus(); return; }
+    if (event.key === 'Escape' && st.side && !st.menu && !st.dialog) { event.preventDefault(); st.side = null; render(); return; }
     if (event.key === 'Escape' && st.menu) { event.preventDefault(); st.menu = null; render(); return; }
     if (event.key === 'Escape' && (st.dialog || st.panel)) { event.preventDefault(); if (st.dialog) st.dialog = null; else st.panel = null; render(); return; }
     if (st.page === 'map' && !st.dialog && !st.panel && (event.key === 'Escape' || !event.target.closest?.('input, select, textarea'))) {
@@ -486,14 +613,14 @@ const Agent365UI = (() => {
   function onPointerMove(event) { if (!drag) return; st.pan = [drag.pan[0] + event.clientX - drag.x, drag.pan[1] + event.clientY - drag.y]; applyView(); }
   function onPointerUp() { if (!drag) return; drag = null; root?.querySelector('.a365-viewport')?.classList.remove('grab'); }
   function unmount() {
-    clearTimeout(toastTimer);
-    if (root) { root.removeEventListener('click', onClick); root.removeEventListener('change', onChange); root.removeEventListener('input', onInput); root.removeEventListener('submit', onSubmit); root.removeEventListener('pointerdown', onPointerDown); }
+    clearTimeout(toastTimer); clearTimeout(chatTimer);
+    if (root) { root.removeEventListener('click', onClick); root.removeEventListener('change', onChange); root.removeEventListener('input', onInput); root.removeEventListener('submit', onSubmit); root.removeEventListener('focusin', onFocusIn); root.removeEventListener('pointerdown', onPointerDown); }
     document.removeEventListener('keydown', onKey); document.removeEventListener('pointermove', onPointerMove); document.removeEventListener('pointerup', onPointerUp);
     drag = null; root = null;
   }
   function mount(element) {
     unmount(); root = element; store = Agent365.createStore(); st = fresh();
-    root.addEventListener('click', onClick); root.addEventListener('change', onChange); root.addEventListener('input', onInput); root.addEventListener('submit', onSubmit); root.addEventListener('pointerdown', onPointerDown);
+    root.addEventListener('click', onClick); root.addEventListener('change', onChange); root.addEventListener('input', onInput); root.addEventListener('submit', onSubmit); root.addEventListener('focusin', onFocusIn); root.addEventListener('pointerdown', onPointerDown);
     document.addEventListener('keydown', onKey); document.addEventListener('pointermove', onPointerMove); document.addEventListener('pointerup', onPointerUp);
     render();
   }
