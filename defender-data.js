@@ -30,9 +30,11 @@ const DefenderData=(()=>{
     ['INC-D309','Engineering','High','Suspicious cloud application consent','In progress','Priya Shah',3,2,'Contoso Build Assistant','Unexpected permissions require owner validation','DEV-008'],
     ['INC-D308','Finance','Medium','Unusual server authentication activity','New','Unassigned',2,2,'FIN-SRV-008','Authentication sequence requires service-owner context','DEV-005'],
     ['INC-D307','Engineering','Medium','Build runner network anomaly','Resolved','Noah Williams',2,5,'ENG-LNX-021','Authorized package retrieval validated','DEV-006'],
-    ['INC-D306','Operations','Low','Endpoint sensor reporting gap','In progress','Taylor Brooks',1,6,'OPS-MAC-009','Device offline; no sensor tampering conclusion','DEV-009']
+    ['INC-D306','Operations','Low','Endpoint sensor reporting gap','In progress','Taylor Brooks',1,6,'OPS-MAC-009','Device offline; no sensor tampering conclusion','DEV-009'],
+    ['SIM-DEF-001','Finance','High','Suspicious file activity on FIN-LT-042','In progress','Alex Morgan',1,1,'FIN-LT-042','Demo reel case: endpoint behavior signal; automated investigation AIR-1042 running; isolation awaits approval','DEV-001'],
+    ['SIM-DEF-002','Engineering','High','Defender device risk is High on ENG-WS-083','In progress','Jordan Lee',1,1,'ENG-WS-083','Demo reel case: High device risk shared with Intune; a Sync does not lower the risk','DEV-002']
   ];
-  modules['defender-incidents']=mod('Defender incidents','fa-shield-halved','Correlated Defender-only investigation cases. Separate from the existing cross-workload incident queue; overlapping IDs describe the same seeded case.',
+  modules['defender-incidents']=mod('Defender incidents','fa-shield-halved','Correlated Defender-only investigation cases. Separate from the existing cross-workload incident queue; overlapping IDs describe the same seeded case. SIM- cases are the incidents told in the demo reels.',
     ['Incident','Case ID','Severity','Alerts','Owner','Status'],incidentSpecs.map(p=>row(p[0],p[1],p[4],[p[3],p[0],p[2],p[6],p[5],p[4]],{'Affected entity':p[8],'Evidence':p[9],'Investigation guidance':'Review related evidence and business context before containment','Disposition':p[4]==='Resolved'?'Resolved in fictional snapshot':'Investigation remains open','Source':'Defender XDR correlated fixtures'},p[7],[link('devices',p[10])])),true,['endpoints','email','identities','cloud-apps','investigations']);
 
   const endpointSpecs=[

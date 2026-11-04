@@ -3,7 +3,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const data=require('../defender-data.js');
 
-test('15 Defender modules contain 104 aligned inspectable records',()=>{
+test('15 Defender modules contain 106 aligned inspectable records',()=>{
   assert.equal(Object.keys(data.modules).length,15);
   const ids=new Set();
   for(const [key,mod]of Object.entries(data.modules)){
@@ -16,7 +16,7 @@ test('15 Defender modules contain 104 aligned inspectable records',()=>{
       assert.match(r.details['Data source'],/Fictional.*no live connection/);
     }
   }
-  assert.equal(ids.size,104);
+  assert.equal(ids.size,106);
 });
 test('every Defender related solution and record cross-link resolves',()=>{
   for(const mod of Object.values(data.modules)){
