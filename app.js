@@ -24,7 +24,7 @@
   const panelTitle = (title, subtitle = '', right = '') => `<div class="panel-heading"><div><h2>${title}</h2>${subtitle ? `<p>${subtitle}</p>` : ''}</div>${right}</div>`;
   const linkButton = (text, view) => `<button class="text-button" data-view="${view}">${text} ${icon('fa-arrow-right')}</button>`;
   const tag = type => `<span class="license-tag ${type === 'License-dependent' ? 'dependent' : type === 'Integrated' ? 'integrated' : ''}">${type}</span>`;
-  const titles = { agent365: ['Agent 365', 'Registry, observability and governance for AI agents | Contoso', ''], 'agent365-story': ['Agent 365 story', 'The agent nobody owned', ''], 'agent365-story-hr': ['Agent 365 story', 'The salary question', ''], overview: ['Security overview', 'Contoso | Security posture and cross-workload operations', ''], incidents: ['Incidents & alerts', 'Cross-workload investigation queue | Contoso', ''], hunting: ['Advanced hunting', 'Explore supported hunting templates against the local sample dataset.', ''], actions: ['Action center', 'Review pending response recommendations and recorded sample actions.', ''], reports: ['Reports & insights', 'Security trends and operational metrics from the sample environment.', ''], licenses: ['Licensing & integrations', 'Product capabilities, entitlement boundaries, and supported integration paths.', ''], copilot: ['Microsoft Security Copilot', 'Investigation workspace | Local scripted assistant', ''], search: ['Search results', 'Results from the local demonstration dataset.', ''] };
+  const titles = { showcase: ['E7 showcase', 'Capability wall and guided tour | Contoso', ''], agent365: ['Agent 365', 'Registry, observability and governance for AI agents | Contoso', ''], 'agent365-story': ['Agent 365 story', 'The agent nobody owned', ''], 'agent365-story-hr': ['Agent 365 story', 'The salary question', ''], overview: ['Security overview', 'Contoso | Security posture and cross-workload operations', ''], incidents: ['Incidents & alerts', 'Cross-workload investigation queue | Contoso', ''], hunting: ['Advanced hunting', 'Explore supported hunting templates against the local sample dataset.', ''], actions: ['Action center', 'Review pending response recommendations and recorded sample actions.', ''], reports: ['Reports & insights', 'Security trends and operational metrics from the sample environment.', ''], licenses: ['Licensing & integrations', 'Product capabilities, entitlement boundaries, and supported integration paths.', ''], copilot: ['Microsoft Security Copilot', 'Investigation workspace | Local scripted assistant', ''], search: ['Search results', 'Results from the local demonstration dataset.', ''] };
 
   function destroyCharts() { state.charts.forEach(chart => chart.destroy()); state.charts = []; }
   function chart(id, config) {
@@ -397,6 +397,12 @@
     content.innerHTML = `<div class="section-heading"><h2>${incidents.length + capabilities.length} results for “${escape(query)}”</h2><span class="license-note">Incident results respect the selected scope</span></div><section class="search-results">${incidents.map(item => `<button class="search-result" data-incident="${item.id}"><span>${item.id} · ${escape(item.product)} · ${item.unit}</span><strong>${escape(item.title)}</strong><span>${escape(item.entity)}</span></button>`).join('')}${capabilities.map(result => `<button class="search-result" data-view="${result.key}" data-capability-result="true"><span>${result.product.name} · ${result.item[2]}</span><strong>${result.item[0]}</strong><span>${result.item[1]}</span></button>`).join('')}${!incidents.length && !capabilities.length ? '<div class="empty-state">'+icon('fa-magnifying-glass')+'<strong>No matches found</strong><p>Try phishing, BitLocker, MFA, DLP, or a sample device name.</p></div>' : ''}</section>`;
   }
   function render() {
+    const reelTarget = Showcase.reelFor(state.view, state.portalSection);
+    if (Showcase.tour.isActive()) {
+      if (reelTarget) Showcase.tour.enter(reelTarget);
+      else if (Showcase.tour.isPlaying()) { Showcase.tour.leave(); state.view = 'showcase'; state.portalSection = ''; state.portalContext = null; state.tab = 'overview'; history.replaceState(null, '', '#showcase'); }
+    }
+    ShowcaseUI.unmount();
     EntraReelUI.unmount();
     StoryUI.unmount();
     Agent365UI.unmount();
@@ -406,6 +412,7 @@
     document.body.classList.toggle('entra-reel-active', state.view === 'entra' && state.portalSection === 'demo-reel');
     document.body.classList.toggle('defender-reel-active', state.view === 'defender' && state.portalSection === 'attack-reel');
     document.body.classList.toggle('a365-active', state.view === 'agent365');
+    document.body.classList.toggle('showcase-active', state.view === 'showcase');
     destroyCharts();
     const product = data.products[state.view];
     const portalKey = product ? state.view : ['incidents','hunting','actions','reports'].includes(state.view) ? state.portalContext : null;
@@ -427,7 +434,7 @@
     if (product) document.querySelector(`#navigation [data-view="${state.view}"]`).after(contextual);
     document.querySelector('.nav-count').textContent = activeCount();
     if (product) productView(state.view);
-    else ({ overview, incidents: incidentView, hunting: huntingView, actions: actionsView, reports, licenses: licensing, copilot, agent365: () => { content.innerHTML = '<div id="a365-host"></div>'; Agent365UI.mount(content.querySelector('#a365-host')); }, 'agent365-story': () => { content.innerHTML = '<div id="story-root"></div>'; StoryUI.mount(content.querySelector('#story-root'), 'agent365'); }, 'agent365-story-hr': () => { content.innerHTML = '<div id="story-root"></div>'; StoryUI.mount(content.querySelector('#story-root'), 'agent365hr'); }, search: () => searchView(document.querySelector('#global-search').value.trim()) }[state.view] || overview)();
+    else ({ overview, incidents: incidentView, hunting: huntingView, actions: actionsView, reports, licenses: licensing, copilot, showcase: () => ShowcaseUI.mount(content), agent365: () => { content.innerHTML = '<div id="a365-host"></div>'; Agent365UI.mount(content.querySelector('#a365-host')); }, 'agent365-story': () => { content.innerHTML = '<div id="story-root"></div>'; StoryUI.mount(content.querySelector('#story-root'), 'agent365'); }, 'agent365-story-hr': () => { content.innerHTML = '<div id="story-root"></div>'; StoryUI.mount(content.querySelector('#story-root'), 'agent365hr'); }, search: () => searchView(document.querySelector('#global-search').value.trim()) }[state.view] || overview)();
     if (state.view === 'purview' && state.tab === 'overview' && !state.portalSection) {
       const home=content.querySelector('.purview-home');
       home.insertAdjacentHTML('afterbegin', `<section class="pa-launch">${icon('fa-robot')}<div><h2>What happens when someone sends PII to an agent?</h2><p>Try the protected chatbot. Attach a synthetic document, send a message, and see the policy block inside the conversation.</p></div><button data-portal-target="section:agent-protection">${icon('fa-comment-dots')} Open protected chatbot</button></section>`);
@@ -458,6 +465,7 @@
   function storyLaunch() {
     if (state.view === 'overview' && state.dashboardTab === 'overview') {
       content.insertAdjacentHTML('afterbegin', `<section class="st-launch"><span>${icon('fa-robot')}</span><div><small>NEW \u00b7 AGENT 365</small><h2>Who is watching your AI agents?</h2><p>Explore an Agent 365 registry: every agent, its owner, risk signals and the controls an admin can apply.</p></div><button data-view="agent365">${icon('fa-play')} Open Agent 365</button></section>`);
+      content.insertAdjacentHTML('afterbegin', `<section class="st-launch"><span>${icon('fa-star')}</span><div><small>GUIDED TOUR \u00b7 MICROSOFT 365 E7</small><h2>See every capability in action</h2><p>Run one Contoso Monday across Defender, Entra, Intune, Purview and Agent 365, or browse the capability wall and open the reel, workspace and incident behind each one.</p></div><button data-view="showcase">${icon('fa-play')} Open the E7 showcase</button></section>`);
       return;
     }
     const cards = { entra: ['What happens when someone else has Sarah’s password?', 'Follow the sign-in, the risk detection, the block, and the admin response on realistic screens.'], intune: ['What happens when a laptop falls out of compliance?', 'Watch access get blocked, the user fix their own device, and Intune verify it before access returns.'], purview: ['What happens when a Confidential file is about to leave?', 'See the label, the policy tip, the DLP alert and the analyst’s response, step by step.'] };
