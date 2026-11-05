@@ -83,12 +83,12 @@ const Showcase = (() => {
   };
 
   const stops = [
-    { id: 'attack', pillar: 'defender', icon: 'fa-shield-halved', title: 'A suspicious download', target: R.attack[1], incidents: ['SIM-DEF-001'], bridge: 'Monday morning at Contoso Finance. An unexpected invoice lands in Sarah Chen\u2019s inbox.', say: 'One endpoint signal becomes a Defender XDR incident, and an analyst decides whether to isolate the laptop.', boundary: 'Isolation limits spread; it is not malware removal. The branch where Sarah cancels the download creates no incident.' },
-    { id: 'identity', pillar: 'entra', icon: 'fa-fingerprint', title: 'The sign-in from nowhere', target: R.entraStory[1], incidents: ['SIM-ENT-001'], bridge: 'Phishing often leads to stolen credentials. A sign-in for Sarah\u2019s account now arrives from an unfamiliar network.', say: 'Identity Protection raises risk, Conditional Access blocks the new attempt, and the admin still has to deal with the earlier session.', boundary: 'Blocking a sign-in does not revoke earlier sessions. Risk detections need Entra ID P2.' },
-    { id: 'device', pillar: 'intune', icon: 'fa-laptop', title: 'The laptop that wasn\u2019t ready', target: R.intuneStory[1], incidents: ['SIM-INT-001'], bridge: 'Identity is only half of trust. Daniel Cho\u2019s laptop drifts out of compliance overnight.', say: 'Intune reports the device state, Conditional Access enforces it, and access returns only after a verified check-in.', boundary: 'A fix request is not verified compliance until the device checks in.' },
-    { id: 'data', pillar: 'purview', icon: 'fa-eye', title: 'The file that almost left', target: R.purviewStory[1], incidents: ['SIM-PUR-001'], bridge: 'Trusted people on trusted devices can still send data the wrong way. Aisha Khan tries to share a Confidential file.', say: 'The label drives a DLP rule, the send is blocked, and an analyst closes the alert with a reminder.', boundary: 'The rule covers the modeled email scenario only. A blocked attempt does not prove no other channel was used.' },
-    { id: 'agent', pillar: 'agent365', icon: 'fa-robot', title: 'The agent nobody owned', target: R.agent[1], incidents: ['SIM-AGT-001'], bridge: 'Now the newest identities: AI agents. Maya built one, shared it, and then left the company.', say: 'Agent 365 shows risk signals and ownership gaps, and an AI administrator can block the agent while follow-ups proceed.', boundary: 'Blocking stops use; it does not fix the data, apply a label or assign an owner.' },
-    { id: 'agent-hr', pillar: 'agent365', icon: 'fa-ban', title: 'The salary question', target: R.agentHr[1], incidents: ['SIM-AGT-002'], bridge: 'Agents can be asked for things people are not allowed to see. Daniel asks the HR agent about a colleague\u2019s pay.', say: 'The agent\u2019s lookup is denied before any data is returned, an alert reaches the admin, and a human closes the loop.', boundary: 'A blocked attempt is not evidence of misconduct, and this models one configuration.' }
+    { id: 'attack', pillar: 'defender', icon: 'fa-shield-halved', minutes: 4, title: 'A suspicious download', target: R.attack[1], incidents: ['SIM-DEF-001'], bridge: 'Monday morning at Contoso Finance. An unexpected invoice lands in Sarah Chen\u2019s inbox.', say: 'One endpoint signal becomes a Defender XDR incident, and an analyst decides whether to isolate the laptop.', boundary: 'Isolation limits spread; it is not malware removal. The branch where Sarah cancels the download creates no incident.' },
+    { id: 'identity', pillar: 'entra', icon: 'fa-fingerprint', minutes: 4, title: 'The sign-in from nowhere', target: R.entraStory[1], incidents: ['SIM-ENT-001'], bridge: 'Phishing often leads to stolen credentials. A sign-in for Sarah\u2019s account now arrives from an unfamiliar network.', say: 'Identity Protection raises risk, Conditional Access blocks the new attempt, and the admin still has to deal with the earlier session.', boundary: 'Blocking a sign-in does not revoke earlier sessions. Risk detections need Entra ID P2.' },
+    { id: 'device', pillar: 'intune', icon: 'fa-laptop', minutes: 4, title: 'The laptop that wasn\u2019t ready', target: R.intuneStory[1], incidents: ['SIM-INT-001'], bridge: 'Identity is only half of trust. Daniel Cho\u2019s laptop drifts out of compliance overnight.', say: 'Intune reports the device state, Conditional Access enforces it, and access returns only after a verified check-in.', boundary: 'A fix request is not verified compliance until the device checks in.' },
+    { id: 'data', pillar: 'purview', icon: 'fa-eye', minutes: 3, title: 'The file that almost left', target: R.purviewStory[1], incidents: ['SIM-PUR-001'], bridge: 'Trusted people on trusted devices can still send data the wrong way. Aisha Khan tries to share a Confidential file.', say: 'The label drives a DLP rule, the send is blocked, and an analyst closes the alert with a reminder.', boundary: 'The rule covers the modeled email scenario only. A blocked attempt does not prove no other channel was used.' },
+    { id: 'agent', pillar: 'agent365', icon: 'fa-robot', minutes: 4, title: 'The agent nobody owned', target: R.agent[1], incidents: ['SIM-AGT-001'], bridge: 'Now the newest identities: AI agents. Maya built one, shared it, and then left the company.', say: 'Agent 365 shows risk signals and ownership gaps, and an AI administrator can block the agent while follow-ups proceed.', boundary: 'Blocking stops use; it does not fix the data, apply a label or assign an owner.' },
+    { id: 'agent-hr', pillar: 'agent365', icon: 'fa-ban', minutes: 3, title: 'The salary question', target: R.agentHr[1], incidents: ['SIM-AGT-002'], bridge: 'Agents can be asked for things people are not allowed to see. Daniel asks the HR agent about a colleague\u2019s pay.', say: 'The agent\u2019s lookup is denied before any data is returned, an alert reaches the admin, and a human closes the loop.', boundary: 'A blocked attempt is not evidence of misconduct, and this models one configuration.' }
   ];
 
   const reelTargets = new Set([...Object.values(R).map(r => r[1])]);
@@ -97,20 +97,41 @@ const Showcase = (() => {
     return reelTargets.has(target) ? target : null;
   };
 
+  // Planned talk time, not measured playback time.
+  const agendas = [
+    { id: 'full', name: 'Full story', minutes: 25, audience: 'Architects and technical buyers', stops: ['attack', 'identity', 'device', 'data', 'agent', 'agent-hr'] },
+    { id: 'exec', name: 'Executive story', minutes: 10, audience: 'Business leaders', per: { attack: 3, data: 3, agent: 3 }, stops: ['attack', 'data', 'agent'] }
+  ];
+
+  // Questions an audience tends to ask, with the screen that answers them.
+  const cues = [
+    { ask: 'Is this real tenant data?', answer: 'No. Everything is fictional and local; nothing connects to a tenant.' },
+    { ask: 'Which license covers this?', answer: 'Capabilities are license-dependent. Open the licensing view rather than quoting from memory.', target: 'view:licenses', label: 'Licensing & integrations' },
+    { ask: 'Can I see the whole queue?', answer: 'Every reel incident is a SIM- record in the queue.', target: 'view:incidents', label: 'Incidents & alerts' },
+    { ask: 'What about Security Copilot?', answer: 'It is a scripted assistant here, not a live model.', target: 'view:copilot', label: 'Security Copilot' },
+    { ask: 'How are AI agents governed?', answer: 'Registry, map, risk signals and admin actions.', target: 'view:agent365', label: 'Agent 365' },
+    { ask: 'Which capabilities did we cover?', answer: 'The capability wall shows each one and whether it is demonstrated.', target: 'view:showcase', label: 'Capability wall' }
+  ];
+
   function createTour(list = stops) {
-    const state = { active: false, index: 0, seen: [], playing: null };
-    const current = () => state.active && state.index < list.length ? list[state.index] : null;
-    const snapshot = () => ({ active: state.active, index: state.index, seen: [...state.seen], playing: state.playing, done: state.active && state.index >= list.length, total: list.length });
+    let active = list;
+    const state = { active: false, index: 0, seen: [], playing: null, agenda: null };
+    const current = () => state.active && state.index < active.length ? active[state.index] : null;
+    const snapshot = () => ({ active: state.active, index: state.index, seen: [...state.seen], playing: state.playing, done: state.active && state.index >= active.length, total: active.length, agenda: state.agenda });
     return {
-      stops: list,
-      start() { state.active = true; state.index = 0; state.seen = []; state.playing = null; return snapshot(); },
+      get stops() { return active; },
+      start(ids, agenda) {
+        active = ids ? ids.map(id => list.find(stop => stop.id === id)).filter(Boolean) : list;
+        state.active = true; state.index = 0; state.seen = []; state.playing = null; state.agenda = agenda || null;
+        return snapshot();
+      },
       end() { state.active = false; state.playing = null; return snapshot(); },
       isActive: () => state.active,
       isPlaying: () => state.playing !== null,
       current,
       enter(target) { const stop = current(); if (stop && stop.target === target) state.playing = stop.id; return snapshot(); },
       leave() {
-        const stop = list.find(item => item.id === state.playing);
+        const stop = active.find(item => item.id === state.playing);
         if (!stop) return null;
         if (!state.seen.includes(stop.id)) state.seen.push(stop.id);
         state.playing = null; state.index += 1;
@@ -119,15 +140,15 @@ const Showcase = (() => {
       skip() { const stop = current(); if (stop) state.index += 1; return snapshot(); },
       snapshot,
       demonstrated() {
-        const seenTargets = new Set(list.filter(stop => state.seen.includes(stop.id)).map(stop => stop.target));
+        const seenTargets = new Set(active.filter(stop => state.seen.includes(stop.id)).map(stop => stop.target));
         return capabilities().filter(c => c.reels.some(reel => seenTargets.has(reel[1])));
       },
-      incidents() { return list.filter(stop => state.seen.includes(stop.id)).flatMap(stop => stop.incidents); }
+      incidents() { return active.filter(stop => state.seen.includes(stop.id)).flatMap(stop => stop.incidents); }
     };
   }
 
   const tour = createTour();
-  return { pillars, stops, LEVELS, capabilities, coverage, reelFor, createTour, tour };
+  const startAgenda = id => { const agenda = agendas.find(item => item.id === id) || agendas[0]; return tour.start(agenda.stops, agenda.id); };
+  return { pillars, stops, agendas, cues, LEVELS, capabilities, coverage, reelFor, createTour, tour, startAgenda };
 })();
-
 if (typeof module !== 'undefined' && module.exports) module.exports = Showcase;

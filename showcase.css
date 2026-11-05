@@ -91,3 +91,7 @@ body.dark .sc-chip{background:#3a2327;border-color:#6a3b42;color:#f2a7b0;}
 .sc-sum-row>div{flex:1;min-width:0;}
 .sc-sum-row .sc-proves{margin-top:6px;}
 @media(max-width:1100px){.sc-hero{grid-template-columns:1fr;}.sc-path{grid-template-columns:repeat(3,1fr);}.sc-stats{grid-template-columns:repeat(2,1fr);}}
+
+/* Demo mode (?demo=1): trim the left navigation to the story products. Items stay reachable from the presenter cues. */
+body.demo-mode .nav-item[data-view="hunting"],body.demo-mode .nav-item[data-view="actions"],body.demo-mode .nav-item[data-view="reports"],body.demo-mode .nav-item[data-view="licenses"]{display:none;}
+.sc-tour-head .sc-hint{margin-top:4px;font-size:12.5px;color:var(--muted);}

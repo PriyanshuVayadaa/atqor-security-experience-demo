@@ -461,6 +461,7 @@
       home.insertAdjacentHTML('beforeend',`<div class="section-heading"><h2>Explore Defender modules</h2><span class="license-note">Populated, inspectable sample evidence</span></div><div class="entra-module-grid">${Object.entries(DefenderData.modules).map(([key,module])=>`<button class="portal-card entra-module-card" data-portal-target="section:${key}">${icon(module.icon)}<strong>${module.title}</strong><small>${module.rows.length} curated records ${icon('fa-arrow-right')}</small></button>`).join('')}</div>`);
     }
     storyLaunch();
+    Presenter.sync();
   }
   function storyLaunch() {
     if (state.view === 'overview' && state.dashboardTab === 'overview') {
@@ -638,6 +639,10 @@
   document.querySelector('#notifications').addEventListener('click', () => showDialog('Priority alerts', scopedIncidents().filter(item => item.status !== 'Resolved').slice(0,4).map(item => `<div class="integration-row"><div><h3>${escape(item.title)}</h3><p>${item.id} · ${item.product}</p></div><button class="text-button" data-incident="${item.id}">Review ${icon('fa-arrow-right')}</button></div>`).join('') || '<p>No priority alerts in the selected sample scope.</p>', 'SAMPLE NOTIFICATIONS'));
   document.querySelector('#settings').addEventListener('click', () => showDialog('Environment settings', `<p>Sample snapshot: November 2, 2026. Data is seeded locally; no authentication is configured.</p><div class="detail-facts"><div><span>Theme</span><strong>${state.theme}</strong></div><div><span>Connection mode</span><strong>Offline fixtures</strong></div><div><span>Session edits</span><strong>In-memory only</strong></div><div><span>External requests</span><strong>None during normal dashboard use</strong></div></div><button class="button" data-dialog-view="licenses">Review integration architecture ${icon('fa-arrow-right')}</button>`));
   document.addEventListener('keydown', event => {
+    if (Presenter.isDemo() && !event.ctrlKey && !event.metaKey && !event.altKey && !dialog.open && !['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName) && !document.activeElement.isContentEditable) {
+      if (event.key === 'p' || event.key === 'P') { event.preventDefault(); Presenter.open(); }
+      if (event.key === 'n' || event.key === 'N') { event.preventDefault(); Presenter.playNext(); }
+    }
     if (event.key === '/' && !['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName) && !dialog.open) { event.preventDefault(); document.querySelector('#global-search').focus(); }
     if (event.key === 'Escape') { closeNav(); document.querySelector('#workspace-picker').hidden = true; document.querySelector('#workspace-toggle').setAttribute('aria-expanded','false'); }
     if (event.target.matches('[role="tab"]') && ['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) {
@@ -654,5 +659,6 @@
   try { state.theme = localStorage.getItem('security-demo-theme') || 'light'; } catch {}
   document.body.classList.toggle('dark',state.theme === 'dark');
   document.querySelector('#theme-toggle i').className = state.theme === 'dark' ? 'fa-regular fa-sun' : 'fa-regular fa-moon';
-  navigate(location.hash.slice(1) || 'overview', true);
+  Presenter.init();
+  navigate(location.hash.slice(1) || (Presenter.isDemo() ? 'showcase' : 'overview'), true);
 })();

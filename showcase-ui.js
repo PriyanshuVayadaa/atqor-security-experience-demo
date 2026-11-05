@@ -34,17 +34,19 @@ const ShowcaseUI = (() => {
       const stat = cover.perPillar[pillar.id];
       return `<section class="sc-pillar"><div class="sc-pillar-head"><span class="sc-pillar-icon">${icon(pillar.icon)}</span><div><h3>${esc(pillar.name)}</h3><p>${esc(pillar.tagline)}</p></div><small>${stat.reel} of ${stat.total} shown in a reel</small></div><div class="sc-grid">${cards.map(capabilityCard).join('')}</div></section>`;
     }).join('');
-    return `<div class="sc-root"><section class="sc-hero"><div><small>MICROSOFT 365 E7 \u00b7 SECURITY SHOWCASE</small><h1>See every capability in action</h1><p>One Contoso Monday, six chapters. Watch an attack become a story across Defender, Entra, Intune, Purview and Agent 365, or browse the capability wall and open the reel, workspace and incident behind each one.</p><div class="sc-actions"><button class="sc-primary" data-sc="start">${icon('fa-play')} Run the E7 story</button><span class="sc-scope">${icon('fa-circle-info')} Fictional sample \u00b7 E7 is an ecosystem concept, not a product</span></div></div><ol class="sc-hero-path" aria-label="Tour chapters">${Showcase.stops.map(stop => `<li>${icon(stop.icon)}<span>${esc(stop.title)}</span></li>`).join('')}</ol></section><section class="sc-stats" aria-label="Coverage">${[['all', cover.total, 'Capabilities mapped'], ['reel', cover.reel, 'Shown in a reel'], ['workspace', cover.workspace, 'Explore in a workspace'], ['described', cover.described, 'Described only']].filter(([id, n]) => id === 'all' || n > 0).map(([id, n, label]) => `<button class="${view.level === id ? 'on' : ''}" data-sc="level" data-val="${id}"><strong>${n}</strong><span>${label}</span></button>`).join('')}</section><div class="sc-filters"><div>${pillarChips}</div><div>${levelChips}</div></div>${sections || '<div class="empty-state">No capabilities match these filters.</div>'}<p class="sc-foot">Coverage describes this demo, not Microsoft product coverage. Availability depends on licensing, configuration and permissions. Reels and workspaces use fictional, local data and make no connection to a tenant.</p></div>`;
+    return `<div class="sc-root"><section class="sc-hero"><div><small>MICROSOFT 365 E7 \u00b7 SECURITY SHOWCASE</small><h1>See every capability in action</h1><p>One Contoso Monday. Watch an attack become a story across Defender, Entra, Intune, Purview and Agent 365, in about 10 or 25 minutes, or browse the capability wall and open the reel, workspace and incident behind each one.</p><div class="sc-actions">${Showcase.agendas.map((agenda, index) => `<button class="${index ? 'sc-ghost' : 'sc-primary'}" data-sc="start" data-val="${agenda.id}">${icon('fa-play')} ${esc(agenda.name)} \u00b7 ${agenda.minutes} min</button>`).join('')}<span class="sc-scope">${icon('fa-circle-info')} Fictional sample \u00b7 E7 is an ecosystem concept, not a product</span></div></div><ol class="sc-hero-path" aria-label="Tour chapters">${Showcase.stops.map(stop => `<li>${icon(stop.icon)}<span>${esc(stop.title)}</span></li>`).join('')}</ol></section><section class="sc-stats" aria-label="Coverage">${[['all', cover.total, 'Capabilities mapped'], ['reel', cover.reel, 'Shown in a reel'], ['workspace', cover.workspace, 'Explore in a workspace'], ['described', cover.described, 'Described only']].filter(([id, n]) => id === 'all' || n > 0).map(([id, n, label]) => `<button class="${view.level === id ? 'on' : ''}" data-sc="level" data-val="${id}"><strong>${n}</strong><span>${label}</span></button>`).join('')}</section><div class="sc-filters"><div>${pillarChips}</div><div>${levelChips}</div></div>${sections || '<div class="empty-state">No capabilities match these filters.</div>'}<p class="sc-foot">Coverage describes this demo, not Microsoft product coverage. Availability depends on licensing, configuration and permissions. Reels and workspaces use fictional, local data and make no connection to a tenant.</p></div>`;
   }
 
   function hub() {
     const state = Showcase.tour.snapshot();
     const stops = Showcase.tour.stops;
+    const agendaInfo = Showcase.agendas.find(item => item.id === state.agenda);
+    const agendaName = agendaInfo ? agendaInfo.name + ' \u00b7 about ' + agendaInfo.minutes + ' minutes \u00b7 ' + agendaInfo.audience : '';
     const path = stops.map((stop, index) => {
       const done = state.seen.includes(stop.id), now = !state.done && index === state.index;
       return `<li class="${done ? 'done' : now ? 'now' : ''}">${icon(done ? 'fa-check' : stop.icon)}<span>${esc(stop.title)}</span></li>`;
     }).join('');
-    const head = `<header class="sc-tour-head"><div><small>GUIDED TOUR \u00b7 THE E7 STORY</small><h1>${state.done ? 'Monday at Contoso, complete' : 'Monday at Contoso'}</h1></div><button class="sc-ghost" data-sc="end">${icon('fa-xmark')} End tour</button></header><ol class="sc-path" aria-label="Chapters">${path}</ol>`;
+    const head = `<header class="sc-tour-head"><div><small>GUIDED TOUR \u00b7 THE E7 STORY</small><h1>${state.done ? 'Monday at Contoso, complete' : 'Monday at Contoso'}</h1><p class="sc-hint">${esc(agendaName)}</p></div><button class="sc-ghost" data-sc="end">${icon('fa-xmark')} End tour</button></header><ol class="sc-path" style="grid-template-columns:repeat(${stops.length},1fr)" aria-label="Chapters">${path}</ol>`;
     if (state.done) return `<div class="sc-root sc-tour">${head}${summary()}</div>`;
     const stop = stops[state.index];
     const proves = Showcase.capabilities().filter(c => c.reels.some(reel => reel[1] === stop.target));
@@ -68,7 +70,7 @@ const ShowcaseUI = (() => {
     const button = event.target.closest('[data-sc]');
     if (!button || !root || !root.contains(button)) return;
     const action = button.dataset.sc;
-    if (action === 'start' || action === 'restart') Showcase.tour.start();
+    if (action === 'start') Showcase.startAgenda(button.dataset.val); else if (action === 'restart') Showcase.startAgenda(Showcase.tour.snapshot().agenda);
     else if (action === 'end' || action === 'wall') Showcase.tour.end();
     else if (action === 'skip') Showcase.tour.skip();
     else if (action === 'pillar') view.pillar = button.dataset.val;

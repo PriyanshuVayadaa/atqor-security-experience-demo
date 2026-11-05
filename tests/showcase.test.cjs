@@ -107,3 +107,35 @@ test('a completed tour reports every chapter, capability and incident once', () 
   tour.end();
   assert.equal(tour.isActive(), false);
 });
+
+test('agendas use known chapters and their planned minutes add up', () => {
+  const ids = new Set(Showcase.stops.map(stop => stop.id));
+  for (const agenda of Showcase.agendas) {
+    assert.ok(agenda.stops.length > 0 && agenda.stops.every(id => ids.has(id)), agenda.id);
+    const chapters = agenda.stops.reduce((sum, id) => sum + (agenda.per?.[id] ?? Showcase.stops.find(stop => stop.id === id).minutes), 0);
+    assert.ok(chapters < agenda.minutes && agenda.minutes - chapters <= 4, `${agenda.id}: ${chapters} of ${agenda.minutes}`);
+  }
+  assert.deepEqual(Showcase.agendas.map(agenda => agenda.id), ['full', 'exec']);
+});
+
+test('starting an agenda tours only its chapters and skipped agendas do not leak', () => {
+  const tour = Showcase.createTour();
+  tour.start(['attack', 'data', 'agent'], 'exec');
+  assert.equal(tour.stops.length, 3);
+  assert.equal(tour.snapshot().total, 3);
+  for (const stop of [...tour.stops]) { tour.enter(stop.target); tour.leave(); }
+  assert.equal(tour.snapshot().done, true);
+  assert.deepEqual(tour.incidents(), ['SIM-DEF-001', 'SIM-PUR-001', 'SIM-AGT-001']);
+  tour.start();
+  assert.equal(tour.stops.length, 6);
+  assert.equal(tour.snapshot().seen.length, 0);
+});
+
+test('presenter cues point at real views', () => {
+  const views = ['licenses', 'incidents', 'copilot', 'agent365', 'showcase'];
+  assert.ok(Showcase.cues.length >= 5);
+  for (const cue of Showcase.cues) {
+    assert.ok(cue.ask && cue.answer);
+    if (cue.target) { assert.ok(cue.label); assert.ok(views.includes(cue.target.replace('view:', '')), cue.target); }
+  }
+});
